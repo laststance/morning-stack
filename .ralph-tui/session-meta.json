@@ -1,0 +1,14 @@
+{
+  "id": "921f5f92-a4a5-4b1c-b300-2fc6c2e76fcf",
+  "status": "completed",
+  "startedAt": "2026-02-06T14:11:24.429Z",
+  "updatedAt": "2026-02-06T21:27:25.626Z",
+  "agentPlugin": "claude",
+  "trackerPlugin": "json",
+  "currentIteration": 31,
+  "maxIterations": 0,
+  "totalTasks": 0,
+  "tasksCompleted": 31,
+  "cwd": "/Users/ryotamurakami/repository/morning-stack",
+  "endedAt": "2026-02-06T21:27:25.626Z"
+}

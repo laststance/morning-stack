@@ -1,0 +1,660 @@
+{
+  "name": "MorningStack MVP - Product Requirements Document",
+  "description": "MorningStack is a next-generation news aggregation service for tech professionals. Delivers curated news twice daily (morning/evening editions) from multiple sources including HackerNews, GitHub, Reddit, Bluesky, YouTube, and world news. Built with Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Drizzle ORM, Supabase, Upstash Redis, and Redux Toolkit.",
+  "branchName": "feature/morningstack-mvp",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Project Foundation Setup",
+      "description": "As a developer I want a fully configured Next.js project with all dependencies installed So that I can start building features on a solid foundation",
+      "acceptanceCriteria": [
+        "Initialize Next.js 15 project with App Router, TypeScript, Tailwind CSS v4 using `pnpm create next-app@latest`",
+        "Install and configure shadcn/ui with dark theme as default",
+        "Install core dependencies: `@reduxjs/toolkit react-redux drizzle-orm @neondatabase/serverless next-auth@beta @upstash/redis`",
+        "Configure Tailwind design tokens from PRD color palette: bg-primary (#0D0D0D), bg-secondary (#1A1A1A), bg-tertiary (#262626), text-primary (#FFFFFF), text-secondary (#A0A0A0), text-muted (#666666), accent (#FF6B35), border (#333333)",
+        "Configure fonts: Inter (latin) + Noto Sans JP (japanese) via next/font",
+        "Set up ESLint + Prettier with TypeScript rules",
+        "Create base directory structure: `src/app/`, `src/components/`, `src/lib/`, `src/types/`, `supabase/`, `tests/`",
+        "Add `CLAUDE.md` to `.gitignore`",
+        "Verify `pnpm run dev` starts without errors"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-002",
+      "title": "Database Schema Design with Drizzle ORM",
+      "description": "As a developer I want a complete database schema for all MorningStack entities So that data can be persisted and queried efficiently",
+      "acceptanceCriteria": [
+        "Set up Drizzle ORM with PostgreSQL (Supabase) adapter in `src/lib/db/`",
+        "Create `users` table: id (uuid, pk), email, name, avatarUrl, provider (google/github), createdAt, updatedAt",
+        "Create `editions` table: id (uuid, pk), type (enum: morning/evening), date, publishedAt, status (enum: draft/published)",
+        "Create `articles` table: id (uuid, pk), editionId (fk), source (enum: hackernews/github/reddit/producthunt/tech_rss/hatena/bluesky/youtube/world_news), title, url, thumbnailUrl, excerpt, score, externalId, metadata (jsonb), createdAt",
+        "Create `bookmarks` table: id (uuid, pk), userId (fk), articleId (fk), createdAt with unique constraint on (userId, articleId)",
+        "Create `hidden_items` table: id (uuid, pk), userId (fk), targetType (enum: article/source/topic), targetId, createdAt",
+        "Create `weather_cache` table: id, location, data (jsonb), fetchedAt",
+        "Create `stock_cache` table: id, symbol, data (jsonb), fetchedAt",
+        "Create Drizzle migration files in `supabase/migrations/`",
+        "Export typed schema and relations from `src/lib/db/schema.ts`"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-003",
+      "title": "Authentication with NextAuth.js",
+      "description": "As a user I want to log in with Google or GitHub So that I can save bookmarks and personalize my news feed",
+      "acceptanceCriteria": [
+        "Configure Auth.js v5 (NextAuth) with Google and GitHub OAuth providers in `src/lib/auth.ts`",
+        "Set up Drizzle adapter for Auth.js session persistence",
+        "Create `/login` page with Google and GitHub OAuth buttons styled with shadcn/ui",
+        "Add auth middleware in `src/middleware.ts` to protect `/bookmarks` and `/settings` routes",
+        "Create `SessionProvider` wrapper in root layout",
+        "Display user avatar and name in header when logged in, \"Login\" button when not",
+        "Implement sign-out functionality"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-004",
+      "title": "Redux Toolkit Store Setup",
+      "description": "As a developer I want a centralized state management store So that client-side state like UI preferences and edition selection is managed consistently",
+      "acceptanceCriteria": [
+        "Create Redux store in `src/lib/store.ts` with TypeScript-typed hooks (`useAppDispatch`, `useAppSelector`)",
+        "Create `editionSlice`: manages current edition type (morning/evening), current edition date",
+        "Create `uiSlice`: manages theme (dark/light), sidebar open state, share menu expansion state",
+        "Create `StoreProvider` component wrapping the app in root layout",
+        "Ensure store works with Next.js App Router (client component boundary)"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-005",
+      "title": "HackerNews Data Source Integration",
+      "description": "As a user I want to see top HackerNews stories So that I stay updated on tech community discussions",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/hackernews.ts` with typed fetch function",
+        "Fetch top 5 stories from HN Algolia API (`hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=5`)",
+        "Map API response to `Article` type: title, url, score (points), externalId, metadata (comments count, author)",
+        "Add Upstash Redis caching with 1-hour TTL in `src/lib/cache.ts`",
+        "Handle API errors gracefully with fallback to cached data",
+        "Add JSDoc documentation to exported functions"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-006",
+      "title": "GitHub Trending Data Source Integration",
+      "description": "As a user I want to see trending GitHub repositories So that I discover popular open source projects",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/github.ts` with typed fetch function",
+        "Fetch trending repositories using GitHub REST API search endpoint (sort by stars, created in last 7 days)",
+        "Extract top 5 repos with: name, full_name, description, stargazers_count, language, html_url",
+        "Map to `Article` type with metadata (stars, language, description)",
+        "Add Upstash Redis caching with 1-hour TTL",
+        "Handle rate limiting (60 req/hour unauthenticated) with exponential backoff"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-007",
+      "title": "Reddit Data Source Integration",
+      "description": "As a user I want to see popular Reddit posts from tech-related subreddits So that I see what the community is discussing",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/reddit.ts` with typed fetch function",
+        "Fetch top 5 hot posts from subreddits: r/programming, r/webdev, r/javascript, r/typescript (combine and sort by score)",
+        "Use Reddit JSON API (`reddit.com/r/{subreddit}/hot.json`) to avoid OAuth complexity for MVP",
+        "Map to `Article` type with metadata (subreddit, upvotes, comments, author)",
+        "Add Upstash Redis caching with 1-hour TTL",
+        "Filter out NSFW and removed posts"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-008",
+      "title": "Tech News RSS Feed Integration",
+      "description": "As a user I want to see curated tech news from major outlets So that I get industry news beyond community discussions",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/rss.ts` with typed fetch function using `rss-parser` package",
+        "Aggregate RSS feeds from: The Verge (`theverge.com/rss/index.xml`), Ars Technica, TechCrunch",
+        "Extract top 5 articles sorted by publish date",
+        "Map to `Article` type with metadata (source name, publish date, author)",
+        "Add Upstash Redis caching with 1-hour TTL",
+        "Handle XML parsing errors gracefully"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-009",
+      "title": "Hatena Bookmark Data Source Integration",
+      "description": "As a user I want to see popular Hatena Bookmark entries So that I see what's trending in the Japanese tech community",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/hatena.ts` with typed fetch function",
+        "Fetch hot entries from Hatena Bookmark API (category: technology)",
+        "Extract top 5 entries with: title, url, bookmark count, description",
+        "Map to `Article` type with metadata (bookmark count, category)",
+        "Add Upstash Redis caching with 1-hour TTL"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-010",
+      "title": "Bluesky Data Source Integration",
+      "description": "As a user I want to see trending Bluesky posts So that I see discussions from the decentralized social network",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/bluesky.ts` with typed fetch function",
+        "Use AT Protocol API to fetch popular/trending posts",
+        "Extract top 3 posts with: text, author handle, like count, repost count, url",
+        "Map to `Article` type with metadata (author, likes, reposts)",
+        "Add Upstash Redis caching with 1-hour TTL"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-011",
+      "title": "YouTube Trending Data Source Integration",
+      "description": "As a user I want to see trending YouTube tech videos So that I discover popular tech content",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/youtube.ts` with typed fetch function",
+        "Use YouTube Data API v3 to fetch trending videos in tech/science category",
+        "Extract top 3 videos with: title, channel name, view count, thumbnail URL, video URL",
+        "Map to `Article` type with metadata (channel, views, duration)",
+        "Add Upstash Redis caching with 1-hour TTL",
+        "Handle API quota limits (10,000 units/day)"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-012",
+      "title": "ProductHunt Data Source Integration",
+      "description": "As a user I want to see today's top ProductHunt launches So that I discover new products and tools",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/producthunt.ts` with typed fetch function",
+        "Fetch today's top 5 products using ProductHunt API (GraphQL)",
+        "Extract: name, tagline, votesCount, thumbnail, url, topics",
+        "Map to `Article` type with metadata (votes, tagline, topics)",
+        "Add Upstash Redis caching with 1-hour TTL"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-013",
+      "title": "Weather Widget Data Source",
+      "description": "As a user I want to see current weather for my location So that I can plan my day at a glance",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/weather.ts` with typed fetch function",
+        "Use OpenWeatherMap API to fetch current weather by city name (default: Tokyo)",
+        "Extract: temperature (Celsius), weather condition, icon code, city name",
+        "Cache weather data in `weather_cache` table and Upstash Redis (TTL: 30 minutes)",
+        "Return typed `WeatherData` interface"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-014",
+      "title": "Stock Market Widget Data Source",
+      "description": "As a user I want to see major stock index summaries So that I get a quick financial overview",
+      "acceptanceCriteria": [
+        "Create `src/lib/sources/stocks.ts` with typed fetch function",
+        "Fetch data for: Nikkei 225, S&P 500, NASDAQ using Alpha Vantage or Yahoo Finance API",
+        "Extract: symbol, current price, change amount, change percentage",
+        "Cache in `stock_cache` table and Upstash Redis (TTL: 15 minutes during market hours, 6 hours after close)",
+        "Return typed `StockData[]` interface"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-002"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-015",
+      "title": "Cron Job for Edition Data Collection",
+      "description": "As a system I want automated data collection at scheduled times So that morning and evening editions are ready for users",
+      "acceptanceCriteria": [
+        "Create `/api/cron/collect` API route handler for data collection",
+        "Configure Vercel Cron in `vercel.json`: `06:00 Asia/Tokyo` (morning) and `17:00 Asia/Tokyo` (evening)",
+        "Implement parallel data fetching from all sources using `Promise.allSettled()`",
+        "Create edition record in database with type (morning/evening) and date",
+        "Save collected articles to database linked to the edition",
+        "Apply scoring normalization: convert each source's native score to 0-100 scale",
+        "Select top N articles per section based on normalized scores",
+        "Mark edition as published after all data is collected",
+        "Log collection results (success/failure per source) for monitoring"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-005",
+        "US-006",
+        "US-007",
+        "US-008",
+        "US-013"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-016",
+      "title": "Article Card Component",
+      "description": "As a user I want to see news articles in visually consistent cards So that I can quickly scan and identify interesting content",
+      "acceptanceCriteria": [
+        "Create `src/components/cards/article-card.tsx` as a reusable component",
+        "Display: thumbnail image (with fallback placeholder), title (2-line clamp with ellipsis), source icon + source name, relative time (\"2h ago\"), score/engagement metric",
+        "Show action buttons on hover: bookmark (star icon), share (arrow icon), hide (x icon)",
+        "Props: `article: Article`, `onBookmark`, `onShare`, `onHide` callbacks",
+        "Responsive: full-width on mobile, card grid on desktop",
+        "Follow dark theme: bg-secondary (#1A1A1A) card, bg-tertiary (#262626) on hover",
+        "Accessible: keyboard focusable, aria labels on action buttons, proper heading hierarchy",
+        "Add source brand color indicator bar or badge per source type"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-017",
+      "title": "Header Component with Edition Tabs",
+      "description": "As a user I want a navigation header with morning/evening edition toggle So that I can switch between editions and access key features",
+      "acceptanceCriteria": [
+        "Create `src/components/layout/header.tsx` component",
+        "Display: MorningStack logo (left), morning/evening tab switcher (center), bookmark icon, settings icon, login/avatar (right)",
+        "Morning/evening tabs dispatch to Redux `editionSlice` on click",
+        "Active tab styled with accent color (#FF6B35) underline",
+        "Sticky header on scroll with backdrop blur",
+        "Mobile: hamburger menu for settings/bookmarks/login",
+        "Display current edition date (e.g., \"Feb 6, 2026 - Morning Edition\")"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-004"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-018",
+      "title": "Hero Section",
+      "description": "As a user I want to see the top featured stories prominently So that the most important news catches my attention immediately",
+      "acceptanceCriteria": [
+        "Create `src/components/sections/hero-section.tsx` component",
+        "Display 1 main featured article (large card, 3/4 width on desktop) with 3 sub-articles below",
+        "Main article: large thumbnail, headline, excerpt (3-line clamp), source, time",
+        "Sub-articles: smaller cards in 3-column grid below the main card",
+        "Select hero articles from the highest-scored articles across all sources",
+        "Responsive: stack vertically on mobile (1 column)"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-019",
+      "title": "Weather and Stock Widgets",
+      "description": "As a user I want to see weather and stock info at a glance beside the hero section So that I get essential daily info without leaving the page",
+      "acceptanceCriteria": [
+        "Create `src/components/widgets/weather-widget.tsx`: weather icon, temperature in Celsius, city name, condition text",
+        "Create `src/components/widgets/stock-widget.tsx`: list of indices with name, price, change % (green for up, red for down)",
+        "Position: right sidebar on desktop (1/4 width, beside hero), full-width cards above hero on mobile",
+        "Use shadcn/ui Card component for consistent styling",
+        "Loading state: skeleton placeholders while data fetches"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-013",
+        "US-014"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-020",
+      "title": "Content Section Components",
+      "description": "As a user I want to see categorized news sections (Tech, GitHub, HN, Reddit, etc.) So that I can browse content by source/category",
+      "acceptanceCriteria": [
+        "Create section components in `src/components/sections/`: `tech-section.tsx`, `github-section.tsx`, `hackernews-section.tsx`, `reddit-section.tsx`",
+        "Each section: section header (icon + title), 5 article cards in responsive grid",
+        "Section header component `src/components/sections/section-header.tsx`: emoji/icon, title, optional \"View All\" link",
+        "Desktop layout: 4-column grid for Tech/GitHub/HN/Reddit row",
+        "Tablet: 2-column grid",
+        "Mobile: single column, horizontal scroll for cards within each section"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-021",
+      "title": "SNS and Additional Sections",
+      "description": "As a user I want to see trending content from Bluesky, YouTube, Hatena Bookmark, and world news So that I get a comprehensive view beyond tech-only sources",
+      "acceptanceCriteria": [
+        "Create `src/components/sections/sns-section.tsx`: Bluesky (3 posts), YouTube (3 videos)",
+        "Create `src/components/sections/hatena-section.tsx`: 5 entries",
+        "Create `src/components/sections/world-news-section.tsx`: 5 general news articles (politics minimized)",
+        "YouTube cards: display video thumbnail with play button overlay, view count",
+        "Bluesky cards: display post text snippet, author handle, like count",
+        "Desktop: Bluesky + Hatena + World News in 3-column row",
+        "Source-specific styling: brand colors for each source badge"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-009",
+        "US-010",
+        "US-011",
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-022",
+      "title": "Home Page Assembly",
+      "description": "As a user I want a single home page that displays all sections in the correct layout So that I get my complete morning/evening briefing on one page",
+      "acceptanceCriteria": [
+        "Create `src/app/page.tsx` as an async Server Component",
+        "Fetch current edition data from database based on Redux edition type (morning/evening) and current date",
+        "Layout order: Header → Hero + Widgets → Tech/GitHub/HN/Reddit → SNS → Hatena/World News",
+        "Use `Suspense` boundaries with skeleton loading states for each section",
+        "Pass edition articles to respective section components grouped by source",
+        "Handle \"no edition available\" state with fallback message",
+        "Add page metadata: title \"MorningStack - Your morning briefing, curated\", OGP tags"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-015",
+        "US-017",
+        "US-018",
+        "US-019",
+        "US-020"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-023",
+      "title": "Bookmark Feature",
+      "description": "As a logged-in user I want to save articles to my bookmarks So that I can read them later",
+      "acceptanceCriteria": [
+        "Create Server Action `src/app/actions/bookmarks.ts`: addBookmark, removeBookmark, getBookmarks",
+        "Toggle bookmark on article card star icon click (optimistic UI with Redux)",
+        "Create `/bookmarks` page listing all saved articles in a grid",
+        "Show filled star icon for bookmarked articles, empty star for unbookmarked",
+        "If not logged in, clicking bookmark redirects to `/login` with return URL",
+        "Sort bookmarks by most recently saved"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-003",
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-024",
+      "title": "Hide Content Feature",
+      "description": "As a logged-in user I want to hide articles, sources, or topics I'm not interested in So that my feed becomes more personalized over time",
+      "acceptanceCriteria": [
+        "Create Server Action `src/app/actions/hidden.ts`: hideItem, unhideItem, getHiddenItems",
+        "On article card X icon click, show dropdown: \"Hide this article\", \"Hide from [source]\", \"Hide topic: [keyword]\"",
+        "Hidden articles are filtered out from the home page feed",
+        "Hidden sources exclude all articles from that source",
+        "Store hidden items in `hidden_items` table with targetType and targetId",
+        "Apply filters in the edition data query (server-side filtering)"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-003",
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-025",
+      "title": "Share Feature",
+      "description": "As a user I want to share articles to X, Bluesky, or copy the link So that I can share interesting content with others",
+      "acceptanceCriteria": [
+        "Create `src/components/cards/share-menu.tsx` expandable component",
+        "Default state: single share icon button on article card",
+        "Expanded state: X icon, Bluesky icon, Copy Link icon (animate expand left-to-right)",
+        "X share: open `twitter.com/intent/tweet?text={title}&url={url}` in new tab",
+        "Bluesky share: open `bsky.app/intent/compose?text={title} {url}` in new tab",
+        "Copy Link: copy article URL to clipboard, show \"Copied!\" toast notification",
+        "Close expanded menu when clicking outside"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-016"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-026",
+      "title": "Dark/Light Theme Toggle",
+      "description": "As a user I want to switch between dark and light themes So that I can read comfortably in any lighting condition",
+      "acceptanceCriteria": [
+        "Install and configure `next-themes` package",
+        "Default theme: dark (as specified in PRD)",
+        "Add theme toggle button in header (sun/moon icon)",
+        "Define light theme tokens: bg-primary (#FAFAFA), bg-secondary (#FFFFFF), text-primary (#111111), text-secondary (#555555), accent (#FF6B35)",
+        "Theme persists across sessions via localStorage",
+        "Respect `prefers-color-scheme` system preference on first visit"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-001"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-027",
+      "title": "Responsive Layout",
+      "description": "As a user I want the app to work well on mobile, tablet, and desktop So that I can read on any device",
+      "acceptanceCriteria": [
+        "Mobile (<640px): 1 column, horizontal scroll for section cards, hamburger menu",
+        "Tablet (640-1024px): 2 column grid for sections",
+        "Desktop (1024-1440px): 3-4 column grid, sidebar widgets",
+        "Wide (>1440px): 4 column grid, max-width container (1440px centered)",
+        "Touch targets: minimum 44x44px for all interactive elements",
+        "Test on Chrome DevTools responsive mode at each breakpoint"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-022"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-028",
+      "title": "Settings Page",
+      "description": "As a logged-in user I want a settings page to manage my account and preferences So that I can control my MorningStack experience",
+      "acceptanceCriteria": [
+        "Create `/settings` page with sections: Account, Hidden Items Management, Display Preferences",
+        "Account section: display user info (name, email, avatar), sign out button",
+        "Hidden Items section: list all hidden articles/sources/topics with \"unhide\" button for each",
+        "Display Preferences: theme toggle, default edition (morning/evening)",
+        "Use shadcn/ui Tabs component for section navigation",
+        "Redirect to `/login` if not authenticated"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-003",
+        "US-024"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-029",
+      "title": "About Page",
+      "description": "As a visitor I want to learn about MorningStack So that I understand the service before signing up",
+      "acceptanceCriteria": [
+        "Create `/about` page with: product vision, key features, data sources list, team info placeholder",
+        "Clean typographic layout using Inter font",
+        "Include CTA button to sign up / go to home page",
+        "Responsive design consistent with main app"
+      ],
+      "priority": 1,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-030",
+      "title": "Playwright E2E Tests",
+      "description": "As a developer I want end-to-end tests for critical user flows So that regressions are caught before deployment",
+      "acceptanceCriteria": [
+        "Set up Playwright with `pnpm create playwright`",
+        "Test: home page loads with all sections visible",
+        "Test: morning/evening tab switching changes displayed content",
+        "Test: clicking article card navigates to external URL",
+        "Test: bookmark toggle works for logged-in user (mock auth)",
+        "Test: hide article removes it from the feed",
+        "Test: share menu expands and copy link works",
+        "Test: responsive layout at mobile/tablet/desktop breakpoints",
+        "Add Playwright to CI/CD pipeline",
+        "All tests pass in headless Chrome"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-022",
+        "US-023",
+        "US-024"
+      ],
+      "completionNotes": "Completed by agent"
+    },
+    {
+      "id": "US-031",
+      "title": "Performance Optimization and Deployment",
+      "description": "As a developer I want the app deployed to Vercel with optimized performance So that users have a fast, reliable experience",
+      "acceptanceCriteria": [
+        "Configure `vercel.json` with cron schedules and environment variables",
+        "Set environment variables in Vercel dashboard: SUPABASE_URL, SUPABASE_KEY, UPSTASH_REDIS_URL, NEXTAUTH_SECRET, OAuth credentials",
+        "Lighthouse score: LCP < 2.5s, CLS < 0.1, Performance > 90",
+        "Configure Next.js Image optimization for article thumbnails",
+        "Enable Vercel Analytics and Web Vitals monitoring",
+        "Set up OGP meta tags for social sharing (title, description, image)",
+        "Configure proper cache headers for static assets and API responses",
+        "Deploy to Vercel under `Laststance` organization"
+      ],
+      "priority": 0,
+      "passes": true,
+      "labels": [],
+      "dependsOn": [
+        "US-030"
+      ],
+      "completionNotes": "Completed by agent"
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-02-06T14:00:47.103Z",
+    "version": "1.0.0",
+    "sourcePrd": "tasks/prd-morningstack-mvp.md",
+    "updatedAt": "2026-02-06T16:24:38.151Z"
+  }
+}

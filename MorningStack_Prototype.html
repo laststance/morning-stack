@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MorningStack - Your Morning Briefing, Curated</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0D0D0D;
+            --bg-secondary: #1A1A1A;
+            --bg-tertiary: #262626;
+            --bg-hover: #2A2A2A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #666666;
+            --accent: #FF6B35;
+            --accent-hover: #FF8255;
+            --border: #333333;
+            --success: #22C55E;
+            --warning: #EAB308;
+            --error: #EF4444;
+            
+            /* Source brand colors */
+            --hn-orange: #FF6600;
+            --reddit-orange: #FF4500;
+            --github-purple: #8B5CF6;
+            --producthunt-orange: #DA552F;
+            --x-black: #000000;
+            --youtube-red: #FF0000;
+            --tiktok-cyan: #69C9D0;
+            --tiktok-pink: #EE1D52;
+            --bluesky-blue: #0085FF;
+            --hatena-blue: #00A4DE;
+            --verge-blue: #3B82F6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent) 0%, #FFB347 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px 8px 40px;
+            width: 280px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .edition-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .edition-tab {
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+        }
+
+        .edition-tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .edition-tab:not(.active):hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .login-btn {
+            padding: 8px 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Main Content */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .hero-main {
+            display: grid;
+            grid-template-rows: auto auto;
+            gap: 16px;
+        }
+
+        .hero-article {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .hero-article:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .hero-article-image {
+            width: 100%;
+            height: 280px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 48px;
+        }
+
+        .hero-article-content {
+            padding: 24px;
+        }
+
+        .hero-article-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--accent);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-article-title {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+
+        .hero-article-excerpt {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .article-source {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .source-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .hero-sub-articles {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .sub-article {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .sub-article:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .sub-article-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Sidebar Widgets */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .widget {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .widget-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .weather-widget {
+            text-align: center;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .weather-icon {
+            font-size: 48px;
+        }
+
+        .weather-temp {
+            font-size: 42px;
+            font-weight: 700;
+        }
+
+        .weather-location {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .weather-details {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .weather-detail {
+            text-align: center;
+        }
+
+        .weather-detail-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .weather-detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stock-item:last-child {
+            border-bottom: none;
+        }
+
+        .stock-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .stock-price {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .stock-change {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stock-change.positive {
+            color: var(--success);
+        }
+
+        .stock-change.negative {
+            color: var(--error);
+        }
+
+        /* Section Grid */
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .section-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .section-icon.hn { background: var(--hn-orange); }
+        .section-icon.github { background: var(--github-purple); }
+        .section-icon.reddit { background: var(--reddit-orange); }
+        .section-icon.producthunt { background: var(--producthunt-orange); }
+        .section-icon.tech { background: var(--verge-blue); }
+        .section-icon.x { background: #000; border: 1px solid var(--border); }
+        .section-icon.youtube { background: var(--youtube-red); }
+        .section-icon.tiktok { background: linear-gradient(135deg, var(--tiktok-cyan), var(--tiktok-pink)); }
+        .section-icon.instagram { background: linear-gradient(135deg, #833AB4, #FD1D1D, #F77737); }
+        .section-icon.bluesky { background: var(--bluesky-blue); }
+        .section-icon.hatena { background: var(--hatena-blue); }
+        .section-icon.world { background: var(--text-muted); }
+
+        .section-more {
+            color: var(--accent);
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .section-more:hover {
+            text-decoration: underline;
+        }
+
+        .section-content {
+            padding: 8px 0;
+        }
+
+        /* Article Card */
+        .article-card {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .article-card:hover {
+            background: var(--bg-hover);
+        }
+
+        .article-card:hover .card-actions {
+            opacity: 1;
+        }
+
+        .article-card-title {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .article-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .article-card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-actions {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .card-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .card-action-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .card-action-btn.bookmarked {
+            color: var(--accent);
+        }
+
+        /* Share Button */
+        .share-container {
+            position: relative;
+        }
+
+        .share-expanded {
+            position: absolute;
+            right: 0;
+            top: 0;
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(10px);
+            transition: all 0.2s;
+        }
+
+        .share-container.open .share-expanded {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .share-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .share-option:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .share-option.x:hover { color: #fff; }
+        .share-option.bluesky:hover { color: var(--bluesky-blue); }
+        .share-option.copy:hover { color: var(--success); }
+
+        /* SNS Grid - Different layout */
+        .sns-sections-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        /* World News Section - Compact */
+        .world-news-section {
+            margin-bottom: 48px;
+        }
+
+        .world-news-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+
+        .world-news-card {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .world-news-card:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .world-news-title {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .world-news-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: var(--accent);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            width: 400px;
+            max-width: 90vw;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .hide-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .hide-option:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .hide-option input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+
+        .hide-option-text {
+            flex: 1;
+        }
+
+        .hide-option-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .hide-option-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-secondary {
+            background: var(--bg-tertiary);
+            border: none;
+            color: var(--text-primary);
+        }
+
+        .modal-btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .modal-btn-primary {
+            background: var(--accent);
+            border: none;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 300;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            color: var(--success);
+            font-size: 18px;
+        }
+
+        /* Section Title Row */
+        .section-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-main-title {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sections-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .sns-sections-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .world-news-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                flex-direction: row;
+            }
+            .widget {
+                flex: 1;
+            }
+            .hero-sub-articles {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 16px;
+            }
+            .search-input {
+                width: 200px;
+            }
+            .sections-grid {
+                grid-template-columns: 1fr;
+            }
+            .sns-sections-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .world-news-grid {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <a href="#" class="logo">
+                <div class="logo-icon">☀️</div>
+                MorningStack
+            </a>
+            <div class="search-container">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="search-input" placeholder="記事を検索...">
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="edition-tabs">
+                <button class="edition-tab active">🌅 朝刊</button>
+                <button class="edition-tab">🌆 夕刊</button>
+            </div>
+            <button class="header-btn" title="ブックマーク">☆</button>
+            <button class="header-btn" title="設定">⚙</button>
+            <button class="login-btn">ログイン</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-main">
+                <article class="hero-article">
+                    <div class="hero-article-image">🖼️</div>
+                    <div class="hero-article-content">
+                        <span class="hero-article-tag">Tech</span>
+                        <h2 class="hero-article-title">AIエージェントの時代が本格到来：OpenAI、Google、Anthropicが競う次世代技術</h2>
+                        <p class="hero-article-excerpt">2025年後半、AIエージェント技術が急速に進化している。各社が独自のアプローチで自律型AIの開発を加速させる中、産業への応用が本格化している。</p>
+                        <div class="article-meta">
+                            <div class="article-source">
+                                <span class="source-icon" style="background: var(--verge-blue);">V</span>
+                                The Verge
+                            </div>
+                            <span>•</span>
+                            <span>2時間前</span>
+                        </div>
+                    </div>
+                </article>
+                <div class="hero-sub-articles">
+                    <article class="sub-article">
+                        <h3 class="sub-article-title">GitHub Copilot Workspace が正式リリース、開発者の生産性を大幅向上</h3>
+                        <div class="article-meta">
+                            <div class="article-source">
+                                <span class="source-icon" style="background: var(--github-purple);">G</span>
+                                GitHub Blog
+                            </div>
+                            <span>•</span>
+                            <span>3時間前</span>
+                        </div>
+                    </article>
+                    <article class="sub-article">
+                        <h3 class="sub-article-title">Rust 2.0 のロードマップが発表、後方互換性を維持した大型アップデート</h3>
+                        <div class="article-meta">
+                            <div class="article-source">
+                                <span class="source-icon" style="background: var(--hn-orange);">Y</span>
+                                HackerNews
+                            </div>
+                            <span>•</span>
+                            <span>4時間前</span>
+                        </div>
+                    </article>
+                    <article class="sub-article">
+                        <h3 class="sub-article-title">Apple、M4 Ultra搭載のMac Studioを発表 - クリエイター向け最強マシン</h3>
+                        <div class="article-meta">
+                            <div class="article-source">
+                                <span class="source-icon" style="background: #555;">A</span>
+                                Apple Newsroom
+                            </div>
+                            <span>•</span>
+                            <span>5時間前</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+            <aside class="sidebar">
+                <div class="widget weather-widget">
+                    <div class="widget-header">
+                        <span class="widget-title">天気</span>
+                        <span style="font-size: 12px; color: var(--text-muted);">茨城県石岡市</span>
+                    </div>
+                    <div class="weather-main">
+                        <span class="weather-icon">🌤️</span>
+                        <span class="weather-temp">14°</span>
+                    </div>
+                    <div class="weather-location">晴れ時々曇り</div>
+                    <div class="weather-details">
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">湿度</div>
+                            <div class="weather-detail-value">65%</div>
+                        </div>
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">風速</div>
+                            <div class="weather-detail-value">3m/s</div>
+                        </div>
+                        <div class="weather-detail">
+                            <div class="weather-detail-label">最高</div>
+                            <div class="weather-detail-value">17°</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📈 株価</span>
+                    </div>
+                    <div class="stock-item">
+                        <span class="stock-name">日経225</span>
+                        <div>
+                            <span class="stock-price">38,547</span>
+                            <span class="stock-change positive">+1.24%</span>
+                        </div>
+                    </div>
+                    <div class="stock-item">
+                        <span class="stock-name">S&P 500</span>
+                        <div>
+                            <span class="stock-price">6,032</span>
+                            <span class="stock-change positive">+0.56%</span>
+                        </div>
+                    </div>
+                    <div class="stock-item">
+                        <span class="stock-name">NASDAQ</span>
+                        <div>
+                            <span class="stock-price">19,234</span>
+                            <span class="stock-change negative">-0.32%</span>
+                        </div>
+                    </div>
+                    <div class="stock-item">
+                        <span class="stock-name">BTC/USD</span>
+                        <div>
+                            <span class="stock-price">$97,432</span>
+                            <span class="stock-change positive">+2.15%</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <!-- Tech Sections -->
+        <div class="section-title-row">
+            <h2 class="section-main-title">🔥 テック・開発</h2>
+        </div>
+        <div class="sections-grid">
+            <!-- Tech Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon tech">📰</span>
+                        Tech News
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card" onclick="event.stopPropagation()">
+                        <h4 class="article-card-title">Next.js 15.1 リリース、Turbopackがデフォルトに</h4>
+                        <div class="article-card-meta">
+                            <span>The Verge</span>
+                            <span>•</span>
+                            <span>2h</span>
+                            <span>•</span>
+                            <span>⬆️ 432</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Denoがnpm互換性を大幅強化、Node.jsからの移行が容易に</h4>
+                        <div class="article-card-meta">
+                            <span>TechCrunch</span>
+                            <span>•</span>
+                            <span>4h</span>
+                            <span>•</span>
+                            <span>⬆️ 287</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Figma AIが進化、デザインからコード生成まで自動化</h4>
+                        <div class="article-card-meta">
+                            <span>Wired</span>
+                            <span>•</span>
+                            <span>5h</span>
+                            <span>•</span>
+                            <span>⬆️ 198</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">WebGPU対応ブラウザが増加、3Dウェブの新時代</h4>
+                        <div class="article-card-meta">
+                            <span>Ars Technica</span>
+                            <span>•</span>
+                            <span>6h</span>
+                            <span>•</span>
+                            <span>⬆️ 156</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- GitHub Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon github">🐙</span>
+                        GitHub Trending
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">anthropics/claude-code - Claude's official CLI for agentic coding</h4>
+                        <div class="article-card-meta">
+                            <span>TypeScript</span>
+                            <span>•</span>
+                            <span>⭐ 12.4k</span>
+                            <span>•</span>
+                            <span>+2.1k today</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">vercel/ai - Build AI-powered apps with React, Svelte, Vue</h4>
+                        <div class="article-card-meta">
+                            <span>TypeScript</span>
+                            <span>•</span>
+                            <span>⭐ 8.2k</span>
+                            <span>•</span>
+                            <span>+890 today</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">excalidraw/excalidraw - Virtual whiteboard for sketching</h4>
+                        <div class="article-card-meta">
+                            <span>TypeScript</span>
+                            <span>•</span>
+                            <span>⭐ 78k</span>
+                            <span>•</span>
+                            <span>+654 today</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">biomejs/biome - Formatter, linter for JS/TS/JSX/JSON</h4>
+                        <div class="article-card-meta">
+                            <span>Rust</span>
+                            <span>•</span>
+                            <span>⭐ 14.2k</span>
+                            <span>•</span>
+                            <span>+432 today</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- HackerNews Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon hn">Y</span>
+                        HackerNews
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">Show HN: I built a local-first RAG system with SQLite</h4>
+                        <div class="article-card-meta">
+                            <span>yakkomajuri.com</span>
+                            <span>•</span>
+                            <span>239 pts</span>
+                            <span>•</span>
+                            <span>44 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">How good engineers write bad code at big companies</h4>
+                        <div class="article-card-meta">
+                            <span>seangoedecke.com</span>
+                            <span>•</span>
+                            <span>277 pts</span>
+                            <span>•</span>
+                            <span>190 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Effective harnesses for long-running agents</h4>
+                        <div class="article-card-meta">
+                            <span>anthropic.com</span>
+                            <span>•</span>
+                            <span>85 pts</span>
+                            <span>•</span>
+                            <span>32 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Electron vs. Tauri - A comparison for desktop apps</h4>
+                        <div class="article-card-meta">
+                            <span>dolthub.com</span>
+                            <span>•</span>
+                            <span>42 pts</span>
+                            <span>•</span>
+                            <span>19 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Reddit Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon reddit">🤖</span>
+                        Reddit
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">Finally migrated from Create React App to Vite, here's what I learned</h4>
+                        <div class="article-card-meta">
+                            <span>r/reactjs</span>
+                            <span>•</span>
+                            <span>⬆️ 1.2k</span>
+                            <span>•</span>
+                            <span>234 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">[D] Why aren't more companies using local LLMs?</h4>
+                        <div class="article-card-meta">
+                            <span>r/MachineLearning</span>
+                            <span>•</span>
+                            <span>⬆️ 892</span>
+                            <span>•</span>
+                            <span>178 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">TypeScript 5.7 - What's new and what it means for you</h4>
+                        <div class="article-card-meta">
+                            <span>r/typescript</span>
+                            <span>•</span>
+                            <span>⬆️ 654</span>
+                            <span>•</span>
+                            <span>89 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Best practices for managing .env files in 2025</h4>
+                        <div class="article-card-meta">
+                            <span>r/webdev</span>
+                            <span>•</span>
+                            <span>⬆️ 432</span>
+                            <span>•</span>
+                            <span>67 comments</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+
+        <!-- ProductHunt & はてブ -->
+        <div class="sections-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <!-- ProductHunt Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon producthunt">🚀</span>
+                        ProductHunt
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">Linear 3.0 - The project management tool reimagined</h4>
+                        <div class="article-card-meta">
+                            <span>#1 Product of the Day</span>
+                            <span>•</span>
+                            <span>⬆️ 1,432</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Cursor Team - Real-time collaboration for AI coding</h4>
+                        <div class="article-card-meta">
+                            <span>#2 Product of the Day</span>
+                            <span>•</span>
+                            <span>⬆️ 987</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Raycast AI 2.0 - Your personal AI assistant on Mac</h4>
+                        <div class="article-card-meta">
+                            <span>#3 Product of the Day</span>
+                            <span>•</span>
+                            <span>⬆️ 756</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- はてなブックマーク Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon hatena">B!</span>
+                        はてなブックマーク
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">「Take an umbrella with you」のwith youって何故必要？中学生に英語を教えたときの質問</h4>
+                        <div class="article-card-meta">
+                            <span>mond.how</span>
+                            <span>•</span>
+                            <span>524 users</span>
+                            <span>•</span>
+                            <span>学び</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">上海公演続々中止に…「バンダイナムコフェスティバル2025」では日本人演者が歌唱中に強制退場</h4>
+                        <div class="article-card-meta">
+                            <span>gamespark.jp</span>
+                            <span>•</span>
+                            <span>259 users</span>
+                            <span>•</span>
+                            <span>エンタメ</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">助けてください、あんまり物欲ないで有名な妻がいきなりコレ(LOVOT)欲しいって言い出した</h4>
+                        <div class="article-card-meta">
+                            <span>posfie.com</span>
+                            <span>•</span>
+                            <span>222 users</span>
+                            <span>•</span>
+                            <span>テクノロジー</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+
+        <!-- SNS Sections -->
+        <div class="section-title-row">
+            <h2 class="section-main-title">📱 SNS トレンド</h2>
+        </div>
+        <div class="sns-sections-grid">
+            <!-- X Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon x">𝕏</span>
+                        X / Twitter
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">Claude 3.5 Sonnetの新機能がすごい件について</h4>
+                        <div class="article-card-meta">
+                            <span>@tech_insider</span>
+                            <span>•</span>
+                            <span>🔥 Trending</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">ブラックフライデーで買ったものを晒すスレ</h4>
+                        <div class="article-card-meta">
+                            <span>56K posts</span>
+                            <span>•</span>
+                            <span>🔥 Trending</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">#エンジニア転職 今から始める人へのアドバイス</h4>
+                        <div class="article-card-meta">
+                            <span>12K posts</span>
+                            <span>•</span>
+                            <span>Tech</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- YouTube Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon youtube">▶</span>
+                        YouTube
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">【完全解説】2025年版 React学習ロードマップ</h4>
+                        <div class="article-card-meta">
+                            <span>Tech Channel</span>
+                            <span>•</span>
+                            <span>234K views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">AIエージェントで仕事を自動化してみた結果...</h4>
+                        <div class="article-card-meta">
+                            <span>Dev Life</span>
+                            <span>•</span>
+                            <span>189K views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">M4 Mac vs M3 ベンチマーク比較【開発者向け】</h4>
+                        <div class="article-card-meta">
+                            <span>Apple JP</span>
+                            <span>•</span>
+                            <span>156K views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- TikTok Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon tiktok">♪</span>
+                        TikTok
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">プログラマーの1日ルーティン #エンジニア</h4>
+                        <div class="article-card-meta">
+                            <span>@code_life</span>
+                            <span>•</span>
+                            <span>1.2M views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">ChatGPTに作らせた曲がすごすぎた</h4>
+                        <div class="article-card-meta">
+                            <span>@ai_music</span>
+                            <span>•</span>
+                            <span>890K views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">デスク環境紹介 #WFH #在宅ワーク</h4>
+                        <div class="article-card-meta">
+                            <span>@desk_setup</span>
+                            <span>•</span>
+                            <span>567K views</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Instagram Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon instagram">📷</span>
+                        Instagram
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">ミニマリストのデスク環境 #minimalism</h4>
+                        <div class="article-card-meta">
+                            <span>@minimal_desk</span>
+                            <span>•</span>
+                            <span>45K likes</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">東京のカフェ巡り☕ エンジニア向け作業スポット</h4>
+                        <div class="article-card-meta">
+                            <span>@tokyo_cafe</span>
+                            <span>•</span>
+                            <span>32K likes</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">最新ガジェットレビュー #tech #gadget</h4>
+                        <div class="article-card-meta">
+                            <span>@gadget_jp</span>
+                            <span>•</span>
+                            <span>28K likes</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Bluesky Section -->
+            <section class="section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span class="section-icon bluesky">🦋</span>
+                        Bluesky
+                    </h3>
+                    <a href="#" class="section-more">もっと見る</a>
+                </div>
+                <div class="section-content">
+                    <article class="article-card">
+                        <h4 class="article-card-title">分散型SNSの未来について思うこと</h4>
+                        <div class="article-card-meta">
+                            <span>@tech.bsky.social</span>
+                            <span>•</span>
+                            <span>🔥 Hot</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">AT Protocolのフィード機能が面白い</h4>
+                        <div class="article-card-meta">
+                            <span>@dev.bsky.social</span>
+                            <span>•</span>
+                            <span>234 likes</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                    <article class="article-card">
+                        <h4 class="article-card-title">Blueskyのカスタムフィード作ってみた</h4>
+                        <div class="article-card-meta">
+                            <span>@creator.bsky.social</span>
+                            <span>•</span>
+                            <span>189 likes</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" title="ブックマーク">☆</button>
+                            <div class="share-container">
+                                <button class="card-action-btn share-toggle" title="シェア">↗</button>
+                                <div class="share-expanded">
+                                    <button class="share-option x" title="Xでシェア">𝕏</button>
+                                    <button class="share-option bluesky" title="Blueskyでシェア">🦋</button>
+                                    <button class="share-option copy" title="リンクをコピー">🔗</button>
+                                </div>
+                            </div>
+                            <button class="card-action-btn hide-btn" title="非表示">×</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+
+        <!-- World News Section -->
+        <div class="section-title-row">
+            <h2 class="section-main-title">🌍 世界ニュース</h2>
+            <span style="color: var(--text-muted); font-size: 13px;">政治ニュースを控えめに表示</span>
+        </div>
+        <div class="world-news-grid">
+            <article class="world-news-card">
+                <h4 class="world-news-title">香港マンション火災 死者128人に、「たばこの火」が原因か</h4>
+                <div class="world-news-meta">Yahoo!ニュース • 2時間前</div>
+            </article>
+            <article class="world-news-card">
+                <h4 class="world-news-title">ウクライナ代表団が訪米へ、トランプ氏主導の和平案巡り協議</h4>
+                <div class="world-news-meta">Bloomberg • 5時間前</div>
+            </article>
+            <article class="world-news-card">
+                <h4 class="world-news-title">東南アジアで記録的豪雨被害「ラニーニャ」など同時発生が原因か</h4>
+                <div class="world-news-meta">日本経済新聞 • 2時間前</div>
+            </article>
+            <article class="world-news-card">
+                <h4 class="world-news-title">グランディア芳泉に「ロウリュサウナ」福井県あわら市、12月1日オープン</h4>
+                <div class="world-news-meta">福井新聞 • 6時間前</div>
+            </article>
+            <article class="world-news-card">
+                <h4 class="world-news-title">すかいらーく新レストラン"ペルティカ"埼玉初オープンへ</h4>
+                <div class="world-news-meta">埼玉新聞 • 昨日</div>
+            </article>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            © 2025 MorningStack • 
+            <a href="#">利用規約</a> • 
+            <a href="#">プライバシーポリシー</a> • 
+            <a href="#">お問い合わせ</a>
+        </p>
+        <p style="margin-top: 8px; font-size: 12px;">
+            朝刊 2025年11月29日 07:00 更新
+        </p>
+    </footer>
+
+    <!-- Hide Modal -->
+    <div class="modal-overlay" id="hideModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">この記事を非表示にしますか？</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label class="hide-option">
+                    <input type="radio" name="hideOption" value="article" checked>
+                    <div class="hide-option-text">
+                        <div class="hide-option-title">この記事のみ</div>
+                        <div class="hide-option-desc">この記事だけを非表示にします</div>
+                    </div>
+                </label>
+                <label class="hide-option">
+                    <input type="radio" name="hideOption" value="source">
+                    <div class="hide-option-text">
+                        <div class="hide-option-title">このソースを今後非表示</div>
+                        <div class="hide-option-desc">example.com からの記事を表示しません</div>
+                    </div>
+                </label>
+                <label class="hide-option">
+                    <input type="radio" name="hideOption" value="topic">
+                    <div class="hide-option-text">
+                        <div class="hide-option-title">このトピックを今後非表示</div>
+                        <div class="hide-option-desc">「政治」に関する記事を減らします</div>
+                    </div>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal()">キャンセル</button>
+                <button class="modal-btn modal-btn-primary" onclick="confirmHide()">非表示にする</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span id="toastMessage">リンクをコピーしました</span>
+    </div>
+
+    <script>
+        // Edition tabs
+        document.querySelectorAll('.edition-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.edition-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // Share button toggle
+        document.querySelectorAll('.share-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const container = btn.closest('.share-container');
+                
+                // Close other open share containers
+                document.querySelectorAll('.share-container.open').forEach(c => {
+                    if (c !== container) c.classList.remove('open');
+                });
+                
+                container.classList.toggle('open');
+            });
+        });
+
+        // Close share on outside click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.share-container.open').forEach(c => {
+                c.classList.remove('open');
+            });
+        });
+
+        // Copy link
+        document.querySelectorAll('.share-option.copy').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showToast('リンクをコピーしました');
+                btn.closest('.share-container').classList.remove('open');
+            });
+        });
+
+        // Share to X
+        document.querySelectorAll('.share-option.x').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showToast('Xでシェアします...');
+                btn.closest('.share-container').classList.remove('open');
+            });
+        });
+
+        // Share to Bluesky
+        document.querySelectorAll('.share-option.bluesky').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showToast('Blueskyでシェアします...');
+                btn.closest('.share-container').classList.remove('open');
+            });
+        });
+
+        // Bookmark toggle
+        document.querySelectorAll('.card-action-btn').forEach(btn => {
+            if (btn.textContent.trim() === '☆' || btn.textContent.trim() === '★') {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (btn.textContent.trim() === '☆') {
+                        btn.textContent = '★';
+                        btn.classList.add('bookmarked');
+                        showToast('ブックマークに追加しました');
+                    } else {
+                        btn.textContent = '☆';
+                        btn.classList.remove('bookmarked');
+                        showToast('ブックマークを解除しました');
+                    }
+                });
+            }
+        });
+
+        // Hide button
+        document.querySelectorAll('.hide-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModal();
+            });
+        });
+
+        // Modal functions
+        function openModal() {
+            document.getElementById('hideModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('hideModal').classList.remove('show');
+        }
+
+        function confirmHide() {
+            closeModal();
+            showToast('記事を非表示にしました');
+        }
+
+        // Toast function
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Close modal on overlay click
+        document.getElementById('hideModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('hideModal')) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -24,8 +24,8 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between", className)}>
-      <h2 className="flex items-center gap-2 text-lg font-semibold text-ms-text-primary">
+    <div className={cn("flex items-center justify-between border-b border-ms-border pb-2 mb-1", className)}>
+      <h2 className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-ms-text-primary">
         <span role="img" aria-hidden="true">
           {icon}
         </span>
@@ -35,7 +35,7 @@ export function SectionHeader({
       {viewAllHref && (
         <a
           href={viewAllHref}
-          className="text-sm font-medium text-ms-accent transition-colors hover:text-ms-accent/80"
+          className="text-xs font-medium text-ms-accent transition-colors hover:text-ms-accent/80"
         >
           View All
         </a>

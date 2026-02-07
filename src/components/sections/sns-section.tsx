@@ -81,8 +81,10 @@ function YouTubeCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border border-ms-border",
-        "bg-ms-bg-secondary transition-colors hover:bg-ms-bg-tertiary",
+        "group relative flex flex-col overflow-hidden rounded-md",
+        "border border-ms-border/50 bg-ms-bg-secondary",
+        "transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
         "focus-within:ring-2 focus-within:ring-ms-accent/50",
       )}
     >
@@ -114,7 +116,7 @@ function YouTubeCard({
           <div
             className={cn(
               "flex size-12 items-center justify-center rounded-full",
-              "bg-red-600/90 text-white shadow-lg",
+              "bg-red-600/80 text-white shadow-lg backdrop-blur-sm",
               "transition-transform group-hover:scale-110",
             )}
           >
@@ -212,8 +214,10 @@ function BlueskyCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border border-ms-border",
-        "bg-ms-bg-secondary transition-colors hover:bg-ms-bg-tertiary",
+        "group relative flex flex-col overflow-hidden rounded-md",
+        "border border-ms-border/50 bg-ms-bg-secondary",
+        "transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
         "focus-within:ring-2 focus-within:ring-ms-accent/50",
       )}
     >
@@ -332,8 +336,8 @@ function ActionButtons({
           onBookmark?.(article);
         }}
         className={cn(
-          "flex size-7 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-          "bg-ms-bg-primary/70 hover:bg-ms-accent/90 hover:text-white",
+          "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+          "hover:bg-ms-accent/90 hover:text-white",
           isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
         )}
         aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
@@ -356,8 +360,8 @@ function ActionButtons({
             type="button"
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "flex size-7 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-              "bg-ms-bg-primary/70 text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
+              "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+              "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
             )}
             aria-label="Hide options"
           >
@@ -424,8 +428,8 @@ export function SnsSection({
   if (!hasBluesky && !hasYoutube) return null;
 
   return (
-    <section aria-label="Social Media" className="flex flex-col gap-6">
-      <div className="grid gap-6 sm:grid-cols-2">
+    <section aria-label="Social Media" className="flex flex-col gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* Bluesky sub-section */}
         {hasBluesky && (
           <div className="flex flex-col gap-4">

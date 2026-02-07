@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_JP } from "next/font/google";
+import { Inter, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -7,6 +7,7 @@ import { SessionProvider } from "@/components/session-provider";
 import { StoreProvider } from "@/components/store-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/layout/header";
+import { TickerWrapper } from "@/components/layout/ticker-wrapper";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,6 +18,12 @@ const inter = Inter({
 
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -57,11 +64,12 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://i.redd.it" />
       </head>
       <body
-        className={`${inter.variable} ${notoSansJP.variable} font-sans antialiased`}
+        className={`${inter.variable} ${notoSansJP.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <ThemeProvider>
           <StoreProvider>
             <SessionProvider>
+              <TickerWrapper />
               <Header />
               {children}
               <Toaster

@@ -37,7 +37,7 @@ function formatChangePercent(pct: number): string {
 export function StockWidget({ data }: StockWidgetProps) {
   if (data.length === 0) {
     return (
-      <Card className="border-ms-border bg-ms-bg-secondary">
+      <Card className="glass-panel rounded-md border-ms-glass-border">
         <CardContent className="py-4">
           <p className="text-center text-sm text-ms-text-muted">
             Market data unavailable
@@ -48,13 +48,13 @@ export function StockWidget({ data }: StockWidgetProps) {
   }
 
   return (
-    <Card className="border-ms-border bg-ms-bg-secondary">
-      <CardHeader className="pb-0 pt-4">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-ms-text-muted">
+    <Card className="glass-panel rounded-md border-ms-glass-border">
+      <CardHeader className="pb-0 pt-3">
+        <CardTitle className="text-[10px] font-mono font-medium uppercase tracking-[0.2em] text-ms-text-muted">
           Markets
         </CardTitle>
       </CardHeader>
-      <CardContent className="pb-4">
+      <CardContent className="pb-3">
         <ul className="divide-y divide-ms-border" role="list">
           {data.map((stock) => (
             <StockRow key={stock.symbol} stock={stock} />
@@ -73,23 +73,24 @@ function StockRow({ stock }: { stock: StockData }) {
   const isNegative = stock.changePercent < 0;
 
   return (
-    <li className="flex items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
+    <li className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
       <span className="truncate text-sm font-medium text-ms-text-primary">
         {stock.name}
       </span>
 
       <div className="flex shrink-0 flex-col items-end">
-        <span className="text-sm tabular-nums text-ms-text-primary">
+        <span className="font-mono text-sm tabular-nums text-ms-text-primary">
           {formatPrice(stock.price, stock.currency)}
         </span>
         <span
           className={cn(
-            "text-xs tabular-nums font-medium",
-            isPositive && "text-emerald-400",
-            isNegative && "text-red-400",
+            "font-mono text-xs tabular-nums font-medium",
+            isPositive && "text-ms-positive",
+            isNegative && "text-ms-negative",
             !isPositive && !isNegative && "text-ms-text-muted",
           )}
         >
+          {isPositive ? "▲ " : isNegative ? "▼ " : ""}
           {formatChangePercent(stock.changePercent)}
         </span>
       </div>

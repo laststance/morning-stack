@@ -20,8 +20,8 @@ export default async function LoginPage({
   const redirectTo = callbackUrl || "/";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ms-bg-primary">
-      <div className="w-full max-w-sm space-y-8 rounded-xl border border-ms-border bg-ms-bg-secondary p-8">
+    <div className="flex min-h-screen items-center justify-center bg-ms-bg-primary bg-[radial-gradient(ellipse_at_center,oklch(0.15_0.02_260)_0%,transparent_70%)]">
+      <div className="w-full max-w-sm space-y-8 rounded-lg glass-panel p-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-ms-text-primary">
             MorningStack

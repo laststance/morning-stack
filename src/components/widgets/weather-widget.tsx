@@ -16,7 +16,7 @@ export interface WeatherWidgetProps {
 export function WeatherWidget({ data }: WeatherWidgetProps) {
   if (!data) {
     return (
-      <Card className="border-ms-border bg-ms-bg-secondary">
+      <Card className="glass-panel rounded-md border-ms-glass-border">
         <CardContent className="py-4">
           <p className="text-center text-sm text-ms-text-muted">
             Weather data unavailable
@@ -29,9 +29,9 @@ export function WeatherWidget({ data }: WeatherWidgetProps) {
   const iconUrl = `https://openweathermap.org/img/wn/${data.iconCode}@2x.png`;
 
   return (
-    <Card className="border-ms-border bg-ms-bg-secondary">
+    <Card className="glass-panel rounded-md border-ms-glass-border">
       <CardHeader className="pb-0 pt-4">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-ms-text-muted">
+        <CardTitle className="text-[10px] font-mono font-medium uppercase tracking-[0.2em] text-ms-text-muted">
           Weather
         </CardTitle>
       </CardHeader>
@@ -49,7 +49,7 @@ export function WeatherWidget({ data }: WeatherWidgetProps) {
 
           <div className="min-w-0">
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-semibold tabular-nums text-ms-text-primary">
+              <span className="font-mono text-3xl font-semibold tabular-nums text-ms-text-primary">
                 {data.temperatureCelsius}°
               </span>
               <span className="text-sm text-ms-text-muted">C</span>
@@ -70,7 +70,7 @@ export function WeatherWidget({ data }: WeatherWidgetProps) {
  */
 export function WeatherWidgetSkeleton() {
   return (
-    <Card className="border-ms-border bg-ms-bg-secondary">
+    <Card className="glass-panel rounded-md border-ms-glass-border">
       <CardHeader className="pb-0 pt-4">
         <Skeleton className="h-3 w-16" />
       </CardHeader>

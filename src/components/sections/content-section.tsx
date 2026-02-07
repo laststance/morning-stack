@@ -47,7 +47,7 @@ export function ContentSection({
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label={title} className={cn("flex flex-col gap-4", className)}>
+    <section aria-label={title} className={cn("flex flex-col gap-3", className)}>
       <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} />
 
       {/* Mobile: horizontal scroll  |  Tablet+: vertical stack */}
@@ -60,7 +60,7 @@ export function ContentSection({
         {articles.slice(0, 5).map((article) => (
           <div
             key={article.externalId}
-            className="w-[72vw] shrink-0 sm:w-auto"
+            className="w-[68vw] shrink-0 sm:w-auto"
           >
             <ArticleCard
               article={article}

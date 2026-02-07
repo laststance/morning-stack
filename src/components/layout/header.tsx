@@ -53,8 +53,8 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ms-border bg-ms-bg-primary/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 glass-elevated">
+      <div className="mx-auto flex h-12 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo */}
         <Link
           href="/"
@@ -71,7 +71,7 @@ export function Header() {
                 key={tab.type}
                 role="tab"
                 aria-selected={editionType === tab.type}
-                className={`relative cursor-pointer px-3 py-1 text-sm font-medium transition-colors ${
+                className={`relative cursor-pointer px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
                   editionType === tab.type
                     ? "text-ms-accent"
                     : "text-ms-text-muted hover:text-ms-text-secondary"
@@ -178,7 +178,7 @@ export function Header() {
       {/* Mobile menu dropdown */}
       {sidebarOpen && (
         <nav
-          className="border-t border-ms-border bg-ms-bg-primary px-4 pb-4 sm:hidden"
+          className="border-t border-ms-glass-border bg-ms-bg-primary px-4 pb-4 sm:hidden"
           aria-label="Mobile navigation"
         >
           {/* Edition tabs */}

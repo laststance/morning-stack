@@ -154,8 +154,9 @@ function HeroMainCard({
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-lg border border-ms-border",
-        "bg-ms-bg-secondary transition-colors hover:bg-ms-bg-tertiary",
+        "group relative overflow-hidden rounded-md glass-panel",
+        "transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
         "focus-within:ring-2 focus-within:ring-ms-accent/50",
       )}
     >
@@ -197,7 +198,7 @@ function HeroMainCard({
         </a>
 
         {/* Content — right side on desktop, below on mobile */}
-        <div className="flex flex-1 flex-col justify-center gap-3 p-5 lg:p-6">
+        <div className="flex flex-1 flex-col justify-center gap-3 bg-ms-bg-secondary/40 p-5 backdrop-blur-sm lg:p-6">
           {/* Source badge + time */}
           <div className="flex items-center gap-2 text-xs text-ms-text-muted">
             <span
@@ -221,7 +222,7 @@ function HeroMainCard({
             {article.score > 0 && (
               <>
                 <span aria-hidden="true">·</span>
-                <span title={`${article.score} points`}>
+                <span className="font-mono tabular-nums" title={`${article.score} points`}>
                   {formatScore(article.score)}
                 </span>
               </>
@@ -229,7 +230,7 @@ function HeroMainCard({
           </div>
 
           {/* Title */}
-          <h2 className="text-xl font-semibold leading-tight text-ms-text-primary sm:text-2xl">
+          <h2 className="text-xl font-bold leading-tight text-ms-text-primary sm:text-2xl">
             <a
               href={article.url}
               target="_blank"
@@ -263,8 +264,8 @@ function HeroMainCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-            "bg-ms-bg-primary/70 hover:bg-ms-accent/90 hover:text-white",
+            "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+            "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
           aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
@@ -289,8 +290,8 @@ function HeroMainCard({
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-8 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-                "bg-ms-bg-primary/70 text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
+                "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+                "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label="Hide options"
             >

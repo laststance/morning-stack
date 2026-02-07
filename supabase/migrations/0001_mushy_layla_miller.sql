@@ -1,0 +1,1 @@
+ALTER TYPE "public"."article_source" ADD VALUE 'github_prs' BEFORE 'reddit';

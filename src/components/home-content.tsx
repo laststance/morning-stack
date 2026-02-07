@@ -31,6 +31,7 @@ import { GitHubSection } from "@/components/sections/github-section";
 import { HackerNewsSection } from "@/components/sections/hackernews-section";
 import { RedditSection } from "@/components/sections/reddit-section";
 import { SnsSection } from "@/components/sections/sns-section";
+import { GitHubPRsSection } from "@/components/sections/github-prs-section";
 import { HatenaSection } from "@/components/sections/hatena-section";
 import { WorldNewsSection } from "@/components/sections/world-news-section";
 
@@ -277,9 +278,9 @@ export function HomeContent({
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {/* ── Hero + Widgets row ──────────────────────────────────── */}
-      <div className="flex flex-col gap-6 lg:flex-row">
+      <div className="flex flex-col gap-5 lg:flex-row">
         {/* Hero section — 3/4 width on desktop */}
         <div className="min-w-0 lg:flex-[3]">
           <HeroSection
@@ -301,7 +302,7 @@ export function HomeContent({
       </div>
 
       {/* ── Tech / GitHub / HN / Reddit — 4-column grid ────────── */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TechSection
           articles={getArticles(filteredArticlesBySource, "tech_rss")}
           onBookmark={handleBookmark}
@@ -337,8 +338,16 @@ export function HomeContent({
         bookmarkedIds={bookmarkedIdsSet}
       />
 
+      {/* ── GitHub Pull Requests ─────────────────────────────────── */}
+      <GitHubPRsSection
+        articles={getArticles(filteredArticlesBySource, "github_prs")}
+        onBookmark={handleBookmark}
+        onHide={handleHide}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+
       {/* ── Hatena / World News — 3-column grid ─────────────────── */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <HatenaSection
           articles={getArticles(filteredArticlesBySource, "hatena")}
           onBookmark={handleBookmark}

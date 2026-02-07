@@ -13,6 +13,7 @@ import { fetchHatenaArticles } from "@/lib/sources/hatena";
 import { fetchBlueskyArticles } from "@/lib/sources/bluesky";
 import { fetchYouTubeArticles } from "@/lib/sources/youtube";
 import { fetchProductHuntArticles } from "@/lib/sources/producthunt";
+import { fetchGitHubPRs } from "@/lib/sources/github-prs";
 import { fetchWeather } from "@/lib/sources/weather";
 import { fetchStockData } from "@/lib/sources/stocks";
 import { cacheSet } from "@/lib/cache";
@@ -36,6 +37,7 @@ type EditionType = "morning" | "evening";
 const TOP_N_PER_SOURCE: Record<ArticleSource, number> = {
   hackernews: 5,
   github: 5,
+  github_prs: 10,
   reddit: 5,
   tech_rss: 5,
   hatena: 5,
@@ -56,6 +58,7 @@ const TOP_N_PER_SOURCE: Record<ArticleSource, number> = {
 const SCORE_RANGES: Record<ArticleSource, { min: number; max: number }> = {
   hackernews: { min: 0, max: 500 },
   github: { min: 0, max: 5000 },
+  github_prs: { min: 0, max: 100 },
   reddit: { min: 0, max: 5000 },
   tech_rss: { min: 0, max: 100 },
   hatena: { min: 0, max: 500 },
@@ -134,6 +137,7 @@ export async function GET(request: Request) {
     const [
       hnResult,
       ghResult,
+      ghPrsResult,
       redditResult,
       rssResult,
       hatenaResult,
@@ -145,6 +149,7 @@ export async function GET(request: Request) {
     ] = await Promise.allSettled([
       fetchHackerNewsArticles(),
       fetchGitHubArticles(),
+      fetchGitHubPRs(),
       fetchRedditArticles(),
       fetchRssArticles(),
       fetchHatenaArticles(),
@@ -162,6 +167,7 @@ export async function GET(request: Request) {
     }> = [
       { name: "hackernews", result: hnResult },
       { name: "github", result: ghResult },
+      { name: "github_prs", result: ghPrsResult },
       { name: "reddit", result: redditResult },
       { name: "tech_rss", result: rssResult },
       { name: "hatena", result: hatenaResult },

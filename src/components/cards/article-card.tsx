@@ -18,6 +18,7 @@ import {
 export const SOURCE_COLORS: Record<ArticleSource, string> = {
   hackernews: "bg-orange-500",
   github: "bg-gray-400",
+  github_prs: "bg-purple-500",
   reddit: "bg-red-500",
   producthunt: "bg-amber-500",
   tech_rss: "bg-blue-500",
@@ -31,6 +32,7 @@ export const SOURCE_COLORS: Record<ArticleSource, string> = {
 export const SOURCE_LABELS: Record<ArticleSource, string> = {
   hackernews: "Hacker News",
   github: "GitHub",
+  github_prs: "GitHub PR",
   reddit: "Reddit",
   producthunt: "Product Hunt",
   tech_rss: "Tech News",
@@ -128,8 +130,10 @@ export function ArticleCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-lg border border-ms-border",
-        "bg-ms-bg-secondary transition-colors hover:bg-ms-bg-tertiary",
+        "group relative flex flex-col overflow-hidden rounded-md",
+        "border border-ms-border/50 bg-ms-bg-secondary",
+        "transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
         "focus-within:ring-2 focus-within:ring-ms-accent/50",
       )}
     >
@@ -205,7 +209,7 @@ export function ArticleCard({
           {article.score > 0 && (
             <>
               <span aria-hidden="true">·</span>
-              <span title={`${article.score} points`}>
+              <span className="font-mono tabular-nums" title={`${article.score} points`}>
                 {formatScore(article.score)}
               </span>
             </>
@@ -227,8 +231,8 @@ export function ArticleCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-            "bg-ms-bg-primary/70 hover:bg-ms-accent/90 hover:text-white",
+            "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+            "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked
               ? "text-ms-accent"
               : "text-ms-text-secondary",
@@ -255,8 +259,8 @@ export function ArticleCard({
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-8 items-center justify-center rounded-md backdrop-blur-sm transition-colors",
-                "bg-ms-bg-primary/70 text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
+                "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+                "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label="Hide options"
             >

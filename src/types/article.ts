@@ -10,6 +10,7 @@ export interface HideAction {
 export type ArticleSource =
   | "hackernews"
   | "github"
+  | "github_prs"
   | "reddit"
   | "producthunt"
   | "tech_rss"

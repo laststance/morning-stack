@@ -31,6 +31,7 @@ export const editionStatusEnum = pgEnum("edition_status", [
 export const articleSourceEnum = pgEnum("article_source", [
   "hackernews",
   "github",
+  "github_prs",
   "reddit",
   "producthunt",
   "tech_rss",

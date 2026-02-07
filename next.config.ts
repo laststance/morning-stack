@@ -4,28 +4,10 @@ const nextConfig: NextConfig = {
   /** Next.js Image optimization — whitelist external thumbnail domains. */
   images: {
     remotePatterns: [
-      // GitHub — owner avatars from Search API
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-      // Reddit — post thumbnails
-      { protocol: "https", hostname: "i.redd.it" },
-      { protocol: "https", hostname: "b.thumbs.redditmedia.com" },
-      { protocol: "https", hostname: "preview.redd.it" },
-      // YouTube — video thumbnails
-      { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "i9.ytimg.com" },
-      // ProductHunt — product thumbnails
-      { protocol: "https", hostname: "ph-files.imgix.net" },
-      { protocol: "https", hostname: "ph-static.imgix.net" },
-      // Hatena — bookmark entry images
-      { protocol: "https", hostname: "b.st-hatena.com" },
-      { protocol: "https", hostname: "cdn-ak.b.st-hatena.com" },
-      // Bluesky — user avatars
-      { protocol: "https", hostname: "cdn.bsky.app" },
-      { protocol: "https", hostname: "av-cdn.bsky.app" },
-      // RSS feeds — images from major tech outlets
-      { protocol: "https", hostname: "duet-cdn.vox-cdn.com" },
-      { protocol: "https", hostname: "cdn.arstechnica.net" },
-      { protocol: "https", hostname: "techcrunch.com" },
+      // Allow all HTTPS images — articles from Hatena, RSS, and other
+      // aggregated sources reference OGP thumbnails on arbitrary domains
+      // that cannot be enumerated ahead of time.
+      { protocol: "https", hostname: "**" },
     ],
     /** Limit generated sizes to common breakpoints to reduce build cache. */
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],

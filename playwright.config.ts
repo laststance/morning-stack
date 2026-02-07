@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright E2E test configuration for MorningStack.
  *
- * Uses the Next.js dev server on port 3000 with Turbopack.
+ * Uses the Next.js dev server on port 3198 with Turbopack.
  * Tests run in headless Chromium by default. The webServer
  * config auto-starts `pnpm dev` before tests if needed.
  *
@@ -23,7 +23,7 @@ export default defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3198",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -47,8 +47,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "pnpm dev --port 3000",
-    port: 3000,
+    command: "pnpm dev --port 3198",
+    port: 3198,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {

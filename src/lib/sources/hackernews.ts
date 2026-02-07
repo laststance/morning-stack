@@ -78,14 +78,14 @@ export async function fetchHackerNewsArticles(): Promise<Article[]> {
 /**
  * Map HN Algolia API hits to the normalized {@link Article} shape.
  *
- * Stories without a URL (e.g. "Ask HN" text posts) fall back to the
- * HN item permalink.
+ * URLs always point to the HN comment/discussion page rather than the
+ * original external link.
  */
 function mapHitsToArticles(hits: HNAlgoliaHit[]): Article[] {
   return hits.map((hit) => ({
     source: "hackernews" as const,
     title: hit.title,
-    url: hit.url || `https://news.ycombinator.com/item?id=${hit.objectID}`,
+    url: `https://news.ycombinator.com/item?id=${hit.objectID}`,
     score: hit.points,
     externalId: hit.objectID,
     excerpt: hit.story_text ?? undefined,

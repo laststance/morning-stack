@@ -3,17 +3,22 @@ import { cacheGet, cacheSet } from "@/lib/cache";
 
 // ─── GitHub Pull Request API types ────────────────────────────────
 
-/** A single pull request from the GitHub REST API. */
+/**
+ * A single pull request from the GitHub Pulls List API.
+ *
+ * Note: `review_comments`, `additions`, `deletions` are only
+ * available on the individual PR detail endpoint, not the list.
+ */
 interface GitHubPR {
   number: number;
   title: string;
   html_url: string;
   state: "open" | "closed";
   body: string | null;
-  comments: number;
-  review_comments: number;
-  additions: number;
-  deletions: number;
+  comments?: number;
+  review_comments?: number;
+  additions?: number;
+  deletions?: number;
   draft: boolean;
   merged_at: string | null;
   updated_at: string;
@@ -113,7 +118,7 @@ async function fetchRepoPRs(repo: string): Promise<Article[]> {
     url: pr.html_url,
     thumbnailUrl: pr.user.avatar_url,
     excerpt: pr.body ? pr.body.slice(0, 200) : undefined,
-    score: pr.comments + pr.review_comments,
+    score: (pr.comments ?? 0) + (pr.review_comments ?? 0),
     externalId: `pr-${repoShort}-${pr.number}`,
     metadata: {
       repo: repoShort,
@@ -121,8 +126,8 @@ async function fetchRepoPRs(repo: string): Promise<Article[]> {
       state: pr.merged_at ? ("merged" as const) : ("open" as const),
       author: pr.user.login,
       labels: pr.labels.map((l) => ({ name: l.name, color: l.color })),
-      additions: pr.additions,
-      deletions: pr.deletions,
+      additions: pr.additions ?? 0,
+      deletions: pr.deletions ?? 0,
       draft: pr.draft,
       mergedAt: pr.merged_at,
       updatedAt: pr.updated_at,

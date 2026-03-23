@@ -1,48 +1,113 @@
 import { cacheGet, cacheSet } from "@/lib/cache";
 
-// ─── OpenWeatherMap API types ───────────────────────────────────────
+// ─── Open-Meteo API types ───────────────────────────────────────────
 
-/** Shape of a weather condition entry from the OWM API. */
-interface OWMWeatherEntry {
-  id: number;
-  main: string;
-  description: string;
-  icon: string;
-}
-
-/** Relevant subset of the OWM current-weather API response. */
-interface OWMCurrentResponse {
-  name: string;
-  main: { temp: number };
-  weather: OWMWeatherEntry[];
+/** Relevant subset of the Open-Meteo forecast API response. */
+interface OpenMeteoResponse {
+  current: {
+    temperature_2m: number;
+    relative_humidity_2m: number;
+    weather_code: number;
+    wind_speed_10m: number;
+    is_day: number;
+  };
+  daily: {
+    time: string[];
+    weather_code: number[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+  };
 }
 
 // ─── Public types ───────────────────────────────────────────────────
 
+/** A single day's forecast entry. */
+export interface ForecastDay {
+  /** Date string in ISO format (e.g. "2026-03-24"). */
+  date: string;
+  /** Maximum temperature in °C. */
+  tempMax: number;
+  /** Minimum temperature in °C. */
+  tempMin: number;
+  /** Short weather condition label (e.g. "Clear", "Rain"). */
+  condition: string;
+  /** Emoji icon representing the weather condition. */
+  icon: string;
+}
+
 /**
  * Normalized weather data for the weather widget.
  *
- * Extracted from the OpenWeatherMap "current weather" API and cached
- * in both Upstash Redis and the `weather_cache` Drizzle table.
+ * Fetched from the Open-Meteo forecast API (free, no API key required)
+ * and cached in Upstash Redis with a 30-minute TTL.
+ *
+ * @example
+ * {
+ *   city: "Tokyo",
+ *   temperatureCelsius: 18,
+ *   condition: "Partly cloudy",
+ *   iconCode: "⛅",
+ *   humidity: 62,
+ *   windSpeed: 12.5,
+ *   forecast: [
+ *     { date: "2026-03-24", tempMax: 20, tempMin: 12, condition: "Clear", icon: "☀️" },
+ *   ],
+ * }
  */
 export interface WeatherData {
-  /** City name as returned by the API (e.g. "Tokyo"). */
+  /** City name (e.g. "Tokyo"). */
   city: string;
-  /** Temperature in degrees Celsius. */
+  /** Current temperature in degrees Celsius. */
   temperatureCelsius: number;
   /** Short weather condition label (e.g. "Clear", "Rain"). */
   condition: string;
-  /**
-   * OWM icon code (e.g. "01d", "10n").
-   *
-   * Render via `https://openweathermap.org/img/wn/{icon}@2x.png`.
-   */
+  /** Emoji icon for the current weather condition. */
   iconCode: string;
+  /** Relative humidity percentage (0–100). */
+  humidity: number;
+  /** Wind speed in km/h. */
+  windSpeed: number;
+  /** 3-day daily forecast. */
+  forecast: ForecastDay[];
+}
+
+// ─── WMO Weather Code mapping ───────────────────────────────────────
+
+/**
+ * Maps a WMO weather interpretation code to a human-readable label and emoji icon.
+ *
+ * @param code - WMO weather code (0–99).
+ * @param isDay - Whether it is currently daytime (affects sun/moon icon).
+ * @returns Tuple of [condition label, emoji icon].
+ * @example
+ * wmoToCondition(0, true)   // => ["Clear sky", "☀️"]
+ * wmoToCondition(61, true)  // => ["Light rain", "🌧️"]
+ */
+function wmoToCondition(code: number, isDay: boolean): [string, string] {
+  const sunOrMoon = isDay ? "☀️" : "🌙";
+
+  if (code === 0) return ["Clear sky", sunOrMoon];
+  if (code <= 3) return ["Partly cloudy", isDay ? "⛅" : "☁️"];
+  if (code <= 49) return ["Foggy", "🌫️"];
+  if (code <= 59) return ["Drizzle", "🌦️"];
+  if (code <= 65) return ["Rain", "🌧️"];
+  if (code <= 69) return ["Freezing rain", "🌧️"];
+  if (code <= 79) return ["Snow", "❄️"];
+  if (code <= 84) return ["Rain showers", "🌦️"];
+  if (code <= 89) return ["Snow showers", "🌨️"];
+  if (code <= 99) return ["Thunderstorm", "⛈️"];
+
+  return ["Unknown", "❓"];
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-const OWM_BASE_URL = "https://api.openweathermap.org/data/2.5/weather";
+/** Open-Meteo forecast API base URL (free, no key). */
+const API_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+
+/** Tokyo coordinates. */
+const DEFAULT_LAT = 35.6762;
+const DEFAULT_LON = 139.6503;
 
 const CACHE_KEY = "source:weather";
 
@@ -52,44 +117,53 @@ const CACHE_TTL = 30 * 60;
 // ─── Public API ─────────────────────────────────────────────────────
 
 /**
- * Fetch current weather data for a given city.
+ * Fetch current weather + 3-day forecast for a given location.
  *
  * 1. Returns cached data if available (30-minute TTL).
- * 2. On cache miss, fetches from the OpenWeatherMap API and caches the result.
+ * 2. On cache miss, fetches from the Open-Meteo API and caches the result.
  * 3. On API failure, falls back to stale cached data if any exists.
  *
- * Requires the `OPENWEATHERMAP_API_KEY` environment variable. When the key
- * is missing (e.g. during `next build`), the function returns `null`
- * without throwing.
+ * No API key required — Open-Meteo is free and open-source.
  *
- * @param city - City name to query (defaults to `"Tokyo"`).
+ * @param city - City display name (defaults to `"Tokyo"`).
+ * @param lat - Latitude (defaults to Tokyo).
+ * @param lon - Longitude (defaults to Tokyo).
  * @returns {@link WeatherData} or `null` if data is unavailable.
- * @throws Never — returns `null` as a last resort.
+ * @example
+ * const data = await fetchWeather();
+ * // => { city: "Tokyo", temperatureCelsius: 18, humidity: 62, ... }
  */
 export async function fetchWeather(
   city: string = "Tokyo",
+  lat: number = DEFAULT_LAT,
+  lon: number = DEFAULT_LON,
 ): Promise<WeatherData | null> {
-  const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-  if (!apiKey) {
-    console.warn("[Weather] OPENWEATHERMAP_API_KEY not set — skipping fetch");
-    return null;
-  }
-
   // 1. Try cache first
   const cached = await cacheGet<WeatherData>(CACHE_KEY);
   if (cached) return cached;
 
-  // 2. Fetch from API
+  // 2. Fetch from Open-Meteo
   try {
-    const url = `${OWM_BASE_URL}?q=${encodeURIComponent(city)}&units=metric&appid=${apiKey}`;
-    const res = await fetch(url, { next: { revalidate: 0 } });
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lon),
+      current:
+        "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day",
+      daily: "weather_code,temperature_2m_max,temperature_2m_min",
+      forecast_days: "4",
+      timezone: "Asia/Tokyo",
+    });
+
+    const res = await fetch(`${API_BASE_URL}?${params}`, {
+      next: { revalidate: 0 },
+    });
 
     if (!res.ok) {
-      throw new Error(`OWM API responded with ${res.status}`);
+      throw new Error(`Open-Meteo API responded with ${res.status}`);
     }
 
-    const data: OWMCurrentResponse = await res.json();
-    const weather = mapResponseToWeatherData(data);
+    const data: OpenMeteoResponse = await res.json();
+    const weather = mapResponseToWeatherData(data, city);
 
     // Write to cache (fire-and-forget — don't block the response)
     void cacheSet(CACHE_KEY, weather, CACHE_TTL);
@@ -109,14 +183,43 @@ export async function fetchWeather(
 // ─── Internal helpers ───────────────────────────────────────────────
 
 /**
- * Map the raw OpenWeatherMap response to the normalized {@link WeatherData} shape.
+ * Map the raw Open-Meteo response to the normalized {@link WeatherData} shape.
+ *
+ * @param data - Raw API response.
+ * @param city - City display name.
+ * @returns Normalized weather data with current conditions and 3-day forecast.
  */
-function mapResponseToWeatherData(data: OWMCurrentResponse): WeatherData {
-  const primary = data.weather[0];
+function mapResponseToWeatherData(
+  data: OpenMeteoResponse,
+  city: string,
+): WeatherData {
+  const { current, daily } = data;
+  const isDay = current.is_day === 1;
+  const [condition, icon] = wmoToCondition(current.weather_code, isDay);
+
+  // Build 3-day forecast (skip today = index 0, take indices 1–3)
+  const forecast: ForecastDay[] = daily.time.slice(1, 4).map((date, i) => {
+    const idx = i + 1;
+    const [dayCondition, dayIcon] = wmoToCondition(
+      daily.weather_code[idx],
+      true,
+    );
+    return {
+      date,
+      tempMax: Math.round(daily.temperature_2m_max[idx]),
+      tempMin: Math.round(daily.temperature_2m_min[idx]),
+      condition: dayCondition,
+      icon: dayIcon,
+    };
+  });
+
   return {
-    city: data.name,
-    temperatureCelsius: Math.round(data.main.temp),
-    condition: primary?.main ?? "Unknown",
-    iconCode: primary?.icon ?? "01d",
+    city,
+    temperatureCelsius: Math.round(current.temperature_2m),
+    condition,
+    iconCode: icon,
+    humidity: Math.round(current.relative_humidity_2m),
+    windSpeed: Math.round(current.wind_speed_10m * 10) / 10,
+    forecast,
   };
 }

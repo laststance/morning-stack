@@ -297,7 +297,10 @@ export function GitHubPRsSection({
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label="Pull Requests" className="flex flex-col gap-3">
+    <section
+      aria-label="Pull Requests"
+      className="flex min-w-0 flex-col gap-3"
+    >
       <SectionHeader icon="🔀" title="Pull Requests" />
 
       {/* Tab switcher */}

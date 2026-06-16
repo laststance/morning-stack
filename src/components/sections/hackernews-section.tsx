@@ -301,7 +301,7 @@ export function HackerNewsSection({
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label="Hacker News" className="flex flex-col gap-3">
+    <section aria-label="Hacker News" className="flex min-w-0 flex-col gap-3">
       <SectionHeader icon="🔶" title="Hacker News" />
 
       {/* Ranked list — no horizontal scroll needed for compact items */}

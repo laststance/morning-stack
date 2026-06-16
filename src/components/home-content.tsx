@@ -13,6 +13,11 @@ import {
   revertBookmark,
 } from "@/lib/features/bookmarks-slice";
 import {
+  setEditionDate,
+  setEditionType,
+  type EditionType,
+} from "@/lib/features/edition-slice";
+import {
   initializeHidden,
   hideArticle,
   revertHideArticle,
@@ -38,6 +43,10 @@ import { WorldNewsSection } from "@/components/sections/world-news-section";
 // ─── Props ──────────────────────────────────────────────────────────
 
 export interface HomeContentProps {
+  /** Published edition type rendered by the server. */
+  editionType: EditionType;
+  /** Published edition date rendered by the server. */
+  editionDate: string;
   /** All articles from the current edition, grouped by source key. */
   articlesBySource: Record<string, Article[]>;
   /** Flat list of all articles (for hero section scoring). */
@@ -77,7 +86,11 @@ function filterHiddenArticles(
   hiddenSources: Set<string>,
   hiddenTopics: Set<string>,
 ): Article[] {
-  if (hiddenArticleIds.size === 0 && hiddenSources.size === 0 && hiddenTopics.size === 0) {
+  if (
+    hiddenArticleIds.size === 0 &&
+    hiddenSources.size === 0 &&
+    hiddenTopics.size === 0
+  ) {
     return articles;
   }
 
@@ -113,6 +126,8 @@ function filterHiddenArticles(
  * action persistence. Unauthenticated users are redirected to /login.
  */
 export function HomeContent({
+  editionType,
+  editionDate,
   articlesBySource,
   allArticles,
   weather,
@@ -142,9 +157,13 @@ export function HomeContent({
   const hiddenTopicsArray = useAppSelector(
     (state) => state.hidden.hiddenTopics,
   );
-  const hiddenInitialized = useAppSelector(
-    (state) => state.hidden.initialized,
-  );
+  const hiddenInitialized = useAppSelector((state) => state.hidden.initialized);
+
+  // Keep shell metadata aligned with the server-rendered edition.
+  useEffect(() => {
+    dispatch(setEditionType(editionType));
+    dispatch(setEditionDate(editionDate));
+  }, [dispatch, editionDate, editionType]);
 
   // Initialize bookmarks from server data on first render
   useEffect(() => {
@@ -180,7 +199,13 @@ export function HomeContent({
 
   // Apply client-side hidden filtering
   const filteredAllArticles = useMemo(
-    () => filterHiddenArticles(allArticles, hiddenArticleIdsSet, hiddenSourcesSet, hiddenTopicsSet),
+    () =>
+      filterHiddenArticles(
+        allArticles,
+        hiddenArticleIdsSet,
+        hiddenSourcesSet,
+        hiddenTopicsSet,
+      ),
     [allArticles, hiddenArticleIdsSet, hiddenSourcesSet, hiddenTopicsSet],
   );
 
@@ -195,7 +220,12 @@ export function HomeContent({
       );
     }
     return result;
-  }, [articlesBySource, hiddenArticleIdsSet, hiddenSourcesSet, hiddenTopicsSet]);
+  }, [
+    articlesBySource,
+    hiddenArticleIdsSet,
+    hiddenSourcesSet,
+    hiddenTopicsSet,
+  ]);
 
   /**
    * Handle bookmark toggle with optimistic UI.

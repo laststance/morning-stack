@@ -190,6 +190,8 @@ async function EditionContent() {
 
   return (
     <HomeContent
+      editionType={edition.type}
+      editionDate={edition.date}
       articlesBySource={mapToRecord(edition.articlesBySource)}
       allArticles={edition.allArticles}
       weather={widgets.weather}

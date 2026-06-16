@@ -10,9 +10,19 @@ interface EditionState {
   date: string;
 }
 
-/** Returns today's date as YYYY-MM-DD string */
+/**
+ * Returns the current JST date used before server edition data hydrates Redux.
+ * @returns Date string in `YYYY-MM-DD` format for Asia/Tokyo.
+ * @example
+ * getTodayDateString() // => "2026-06-17"
+ */
 function getTodayDateString(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 const initialState: EditionState = {

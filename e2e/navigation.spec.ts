@@ -88,15 +88,30 @@ async function expectAccountAccessState(page: Page) {
     "Sign-in is temporarily unavailable",
   );
 
-  const hasGitHubButton = await githubButton.isVisible().catch(() => false);
-  const hasGoogleButton = await googleButton.isVisible().catch(() => false);
-  const hasUnavailableMessage = await unavailableMessage
-    .isVisible()
-    .catch(() => false);
+  await expect
+    .poll(
+      async () => {
+        const isGitHubButtonVisible = await githubButton
+          .isVisible()
+          .catch(() => false);
+        const isGoogleButtonVisible = await googleButton
+          .isVisible()
+          .catch(() => false);
+        const isUnavailableMessageVisible = await unavailableMessage
+          .isVisible()
+          .catch(() => false);
 
-  expect(
-    hasGitHubButton || hasGoogleButton || hasUnavailableMessage,
-  ).toBeTruthy();
+        return (
+          isGitHubButtonVisible ||
+          isGoogleButtonVisible ||
+          isUnavailableMessageVisible
+        );
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true);
+
+  const hasUnavailableMessage = await unavailableMessage.isVisible();
 
   if (hasUnavailableMessage) {
     await expect(

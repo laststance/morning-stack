@@ -6,8 +6,12 @@ import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 
 export const authProviderAvailability = {
-  github: Boolean(process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET),
-  google: Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
+  github:
+    Boolean(process.env.AUTH_GITHUB_ID?.trim()) &&
+    Boolean(process.env.AUTH_GITHUB_SECRET?.trim()),
+  google:
+    Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
+    Boolean(process.env.AUTH_GOOGLE_SECRET?.trim()),
 };
 
 export const hasAuthProvider =

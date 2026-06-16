@@ -47,8 +47,7 @@ export const SOURCE_LABELS: Record<ArticleSource, string> = {
  * Returns coarse-grained labels: "1m ago", "2h ago", "3d ago".
  */
 function formatRelativeTime(dateInput: string | number | Date): string {
-  const date =
-    dateInput instanceof Date ? dateInput : new Date(dateInput);
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
   const now = Date.now();
   const diffMs = now - date.getTime();
 
@@ -80,7 +79,9 @@ function formatScore(score: number): string {
  */
 function extractKeyword(title: string): string {
   const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find((w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w));
+  const capitalized = words.find(
+    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
+  );
   return capitalized ?? words[0] ?? title.slice(0, 20);
 }
 
@@ -98,7 +99,7 @@ export interface ArticleCardProps {
 /**
  * A reusable card component for displaying an article from any source.
  *
- * Renders a thumbnail (with fallback), title, source badge, relative time,
+ * Renders an optional thumbnail, title, source badge, relative time,
  * engagement score, and hover-visible action buttons (bookmark, share, hide).
  * The hide button opens a dropdown with options to hide the article, source,
  * or topic.
@@ -126,56 +127,61 @@ export function ArticleCard({
 
   const sourceLabel = SOURCE_LABELS[article.source];
   const keyword = extractKeyword(article.title);
+  const thumbnailUrl =
+    article.thumbnailUrl && !imgError ? article.thumbnailUrl : null;
 
   return (
     <article
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-md",
-        "border border-ms-border/50 bg-ms-bg-secondary",
+        "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
-        "focus-within:ring-2 focus-within:ring-ms-accent/50",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
     >
-      {/* Thumbnail */}
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="relative block aspect-[16/9] w-full overflow-hidden bg-ms-bg-tertiary"
-        aria-label={`Read: ${article.title}`}
-      >
-        {article.thumbnailUrl && !imgError ? (
+      {thumbnailUrl ? (
+        <a
+          href={article.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-ms-bg-tertiary relative block aspect-[16/9] w-full overflow-hidden"
+          aria-label={`Read: ${article.title}`}
+        >
           <Image
-            src={article.thumbnailUrl}
+            src={thumbnailUrl}
             alt=""
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
-        ) : (
-          <div className="flex h-full items-center justify-center text-ms-text-muted">
-            <span className="text-3xl" role="img" aria-hidden="true">
-              {sourceLabel?.[0] ?? "?"}
-            </span>
-          </div>
-        )}
 
-        {/* Source brand color indicator bar */}
+          {/* Source brand color indicator bar */}
+          <span
+            className={cn(
+              "absolute bottom-0 left-0 h-0.5 w-full",
+              SOURCE_COLORS[article.source],
+            )}
+            aria-hidden="true"
+          />
+        </a>
+      ) : (
         <span
-          className={cn(
-            "absolute bottom-0 left-0 h-0.5 w-full",
-            SOURCE_COLORS[article.source],
-          )}
+          className={cn("h-0.5 w-full shrink-0", SOURCE_COLORS[article.source])}
           aria-hidden="true"
         />
-      </a>
+      )}
 
       {/* Content */}
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div
+        className={cn(
+          "flex flex-1 flex-col gap-2 p-3",
+          !thumbnailUrl && "min-h-28",
+        )}
+      >
         {/* Title */}
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ms-text-primary">
+        <h3 className="text-ms-text-primary line-clamp-2 text-sm leading-snug font-medium">
           <a
             href={article.url}
             target="_blank"
@@ -187,7 +193,7 @@ export function ArticleCard({
         </h3>
 
         {/* Meta row: source badge + time + score */}
-        <div className="mt-auto flex items-center gap-2 text-xs text-ms-text-muted">
+        <div className="text-ms-text-muted mt-auto flex items-center gap-2 text-xs">
           <span
             className={cn(
               "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
@@ -209,7 +215,10 @@ export function ArticleCard({
           {article.score > 0 && (
             <>
               <span aria-hidden="true">·</span>
-              <span className="font-mono tabular-nums" title={`${article.score} points`}>
+              <span
+                className="font-mono tabular-nums"
+                title={`${article.score} points`}
+              >
                 {formatScore(article.score)}
               </span>
             </>
@@ -220,8 +229,8 @@ export function ArticleCard({
       {/* Hover action buttons */}
       <div
         className={cn(
-          "absolute right-2 top-2 flex gap-1",
-          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+          "absolute top-2 right-2 flex gap-1",
+          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
         )}
       >
         <button
@@ -231,11 +240,9 @@ export function ArticleCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+            "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
             "hover:bg-ms-accent/90 hover:text-white",
-            isBookmarked
-              ? "text-ms-accent"
-              : "text-ms-text-secondary",
+            isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
           aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
         >
@@ -259,7 +266,7 @@ export function ArticleCard({
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+                "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label="Hide options"
@@ -269,7 +276,7 @@ export function ArticleCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 bg-ms-bg-secondary border-ms-border"
+            className="bg-ms-bg-secondary border-ms-border w-56"
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenuItem
@@ -278,7 +285,7 @@ export function ArticleCard({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <EyeOff className="size-4 text-ms-text-muted" />
+              <EyeOff className="text-ms-text-muted size-4" />
               Hide this article
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -287,16 +294,14 @@ export function ArticleCard({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Ban className="size-4 text-ms-text-muted" />
+              <Ban className="text-ms-text-muted size-4" />
               Hide from {sourceLabel}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "topic", targetId: keyword })
-              }
+              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Tag className="size-4 text-ms-text-muted" />
+              <Tag className="text-ms-text-muted size-4" />
               Hide topic: {keyword}
             </DropdownMenuItem>
           </DropdownMenuContent>

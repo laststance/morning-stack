@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { LogIn } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { setEditionType, type EditionType } from "@/lib/features/edition-slice";
 import { toggleSidebar, setSidebarOpen } from "@/lib/features/ui-slice";
@@ -275,9 +276,10 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="text-ms-accent hover:bg-ms-bg-tertiary flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm"
+                className="bg-ms-accent hover:bg-ms-accent/90 flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-white transition-colors"
                 onClick={() => dispatch(setSidebarOpen(false))}
               >
+                <LogIn className="size-4" aria-hidden="true" />
                 Login
               </Link>
             )}

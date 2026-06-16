@@ -6,26 +6,30 @@ onlyBuiltDependencies:
   - esbuild
   - msw
 
-
 # Supply-chain security (migrated from .npmrc 2026-05-07)
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - next
   - react
   - react-dom
-  - '@types/react'
-  - '@types/react-dom'
+  - "@types/react"
+  - "@types/react-dom"
   - typescript
   - vite
   - vitest
-  - '@vitejs/plugin-react'
+  - "@vitejs/plugin-react"
   - eslint
   - prettier
   - tailwindcss
-  - '@tanstack/react-query'
+  - "@tanstack/react-query"
   - zod
   - react-hook-form
   - eslint-config-ts-prefixer
-  - '@laststance/redux-storage-middleware'
-  - '@laststance/react-next-eslint-plugin'
+  - "@laststance/redux-storage-middleware"
+  - "@laststance/react-next-eslint-plugin"
 verifyStoreIntegrity: true
+allowBuilds:
+  esbuild: true
+  msw: true
+  sharp: false
+  unrs-resolver: false

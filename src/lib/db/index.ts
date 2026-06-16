@@ -1,38 +1,39 @@
-import { neon } from "@neondatabase/serverless";
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
-import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
-import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import * as schema from "./schema";
 
+const BUILD_ONLY_DATABASE_URL =
+  "postgresql://placeholder:placeholder@localhost/placeholder";
+
 /**
- * Create a Drizzle ORM instance with driver auto-detection.
+ * Create the Drizzle ORM instance used by server routes and actions.
  *
- * - **Local (localhost / 127.0.0.1):** Uses `postgres` (postgres.js) for
- *   standard TCP connections to local Supabase Docker.
- * - **Production (Neon/Supabase cloud):** Uses `@neondatabase/serverless`
- *   HTTP driver — ideal for Vercel Edge Runtime (no persistent connections).
- * - **Build-time fallback:** When `DATABASE_URL` is unset, a placeholder
- *   satisfies the constructor without ever being queried.
+ * - **Local:** The local Supabase URL uses a regular Postgres connection.
+ * - **Production:** Supabase pooler URLs need prepared statements disabled.
+ * - **Build-time fallback:** The placeholder satisfies construction only.
  *
  * @example
  * // Local:  DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54352/postgres"
- * // Prod:   DATABASE_URL="postgresql://...@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres"
+ * // Prod:   DATABASE_URL="postgresql://...@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres"
  */
-const databaseUrl =
-  process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost/placeholder";
+const databaseUrl = process.env.DATABASE_URL;
 
-const isLocal =
-  databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1");
+if (!databaseUrl && process.env.VERCEL === "1") {
+  throw new Error("DATABASE_URL is required on Vercel");
+}
+
+const resolvedDatabaseUrl = databaseUrl ?? BUILD_ONLY_DATABASE_URL;
+
+const postgresClient = postgres(resolvedDatabaseUrl, {
+  // Supabase pooler connections are safest without prepared statements.
+  prepare: false,
+});
 
 /**
- * Typed as `NeonHttpDatabase` since both drivers expose an identical Drizzle
- * query API at runtime. The cast avoids a union type that breaks overload
- * resolution on methods like `.returning()`.
+ * Typed once so feature modules share the same schema-aware query surface.
  */
-export const db = (
-  isLocal
-    ? drizzlePg({ client: postgres(databaseUrl), schema })
-    : drizzleNeon({ client: neon(databaseUrl), schema })
-) as NeonHttpDatabase<typeof schema>;
+export const db: PostgresJsDatabase<typeof schema> = drizzle(postgresClient, {
+  schema,
+});

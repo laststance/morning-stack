@@ -1,27 +1,26 @@
   ---
-  🔧 MorningStack Credentials セットアップガイド                                                                                              
-                                                                   
-  アーキテクチャ全体像                                                                                                                        
-                                                                   
+  🔧 MorningStack Credentials セットアップガイド
+
+  アーキテクチャ全体像
+
   ┌─────────────────────────────────────────────────────┐
   │  MorningStack (Next.js 16 + App Router)             │
-  │                                                      │
+  │                                                     │
   │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
   │  │ Auth.js  │  │ Drizzle  │  │ Upstash Redis    │  │
   │  │ (OAuth)  │  │  ORM     │  │ (Cache)          │  │
   │  └────┬─────┘  └────┬─────┘  └────┬─────────────┘  │
-  │       │              │              │                │
-  └───────┼──────────────┼──────────────┼────────────────┘
-          │              │              │
+  │       │             │             │                │
+  └───────┼─────────────┼─────────────┼────────────────┘
+          │             │             │
      ┌────▼────┐   ┌────▼──────┐  ┌───▼───────────┐
      │ GitHub  │   │ Supabase  │  │ Upstash       │
      │ Google  │   │ Postgres  │  │ Redis REST    │
-     │ OAuth   │   │ (Neon)    │  │               │
+     │ OAuth   │   │ Pooler    │  │               │
      └─────────┘   └───────────┘  └───────────────┘
 
   ★ Insight ─────────────────────────────────────
-  - Neon HTTP driver: @neondatabase/serverless はVercel Edgeランタイムでも動く。Supabase PostgresはNeon互換接続文字列を提供するため、neon()
-  クライアントでHTTPリクエスト経由でクエリを飛ばせる
+  - Supabase pooler: postgres.js の prepared statements を無効化して、Vercel serverless からpooler経由でPostgresへ接続する
   - Graceful degradation設計: 全ソースが !apiKey → return [] パターンで実装済み。APIキーなしでもアプリは起動する（「No edition
   available」状態）
   - Auth.js v5 auto-detect: AUTH_GITHUB_ID / AUTH_GOOGLE_ID の命名規則で自動プロバイダ検出。明示的に clientId を渡す必要なし

@@ -1,5 +1,12 @@
-import { auth, signIn } from "@/lib/auth";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+
+import {
+  auth,
+  authProviderAvailability,
+  hasAuthProvider,
+  signIn,
+} from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -31,45 +38,74 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <div className="space-y-3">
-          <form
-            action={async () => {
-              "use server";
-              await signIn("github", { redirectTo });
-            }}
+        {hasAuthProvider ? (
+          <div className="space-y-3">
+            {authProviderAvailability.github && (
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("github", { redirectTo });
+                }}
+              >
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="lg"
+                  className="w-full cursor-pointer gap-3 border-ms-border bg-ms-bg-tertiary text-ms-text-primary hover:bg-ms-bg-primary"
+                >
+                  <GitHubIcon />
+                  Continue with GitHub
+                </Button>
+              </form>
+            )}
+
+            {authProviderAvailability.google && (
+              <form
+                action={async () => {
+                  "use server";
+                  await signIn("google", { redirectTo });
+                }}
+              >
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="lg"
+                  className="w-full cursor-pointer gap-3 border-ms-border bg-ms-bg-tertiary text-ms-text-primary hover:bg-ms-bg-primary"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </Button>
+              </form>
+            )}
+          </div>
+        ) : (
+          <div
+            className="rounded-md border border-ms-border bg-ms-bg-tertiary p-4 text-center"
+            role="status"
           >
+            <p className="font-medium text-ms-text-primary">
+              Sign-in is temporarily unavailable
+            </p>
+            <p className="mt-2 text-sm text-ms-text-secondary">
+              Account sign-in is not configured yet. The public briefing is
+              still available.
+            </p>
             <Button
-              type="submit"
+              asChild
               variant="outline"
               size="lg"
-              className="w-full cursor-pointer gap-3 border-ms-border bg-ms-bg-tertiary text-ms-text-primary hover:bg-ms-bg-primary"
+              className="mt-4 w-full cursor-pointer border-ms-border bg-ms-bg-secondary text-ms-text-primary hover:bg-ms-bg-primary"
             >
-              <GitHubIcon />
-              Continue with GitHub
+              <Link href="/">Back to briefing</Link>
             </Button>
-          </form>
+          </div>
+        )}
 
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo });
-            }}
-          >
-            <Button
-              type="submit"
-              variant="outline"
-              size="lg"
-              className="w-full cursor-pointer gap-3 border-ms-border bg-ms-bg-tertiary text-ms-text-primary hover:bg-ms-bg-primary"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-          </form>
-        </div>
-
-        <p className="text-center text-xs text-ms-text-muted">
-          By signing in, you agree to our Terms of Service
-        </p>
+        {hasAuthProvider && (
+          <p className="text-center text-xs text-ms-text-muted">
+            By signing in, you agree to our Terms of Service
+          </p>
+        )}
       </div>
     </div>
   );

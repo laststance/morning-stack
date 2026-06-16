@@ -6,7 +6,11 @@ import { Star, X, EyeOff, Ban, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Article, HideAction } from "@/types/article";
-import { ArticleCard, SOURCE_COLORS, SOURCE_LABELS } from "@/components/cards/article-card";
+import {
+  ArticleCard,
+  SOURCE_COLORS,
+  SOURCE_LABELS,
+} from "@/components/cards/article-card";
 import { ShareMenu } from "@/components/cards/share-menu";
 import {
   DropdownMenu,
@@ -48,7 +52,9 @@ function formatScore(score: number): string {
  */
 function extractKeyword(title: string): string {
   const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find((w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w));
+  const capitalized = words.find(
+    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
+  );
   return capitalized ?? words[0] ?? title.slice(0, 20);
 }
 
@@ -125,7 +131,7 @@ interface HeroMainCardProps {
 
 /**
  * Large featured card for the primary hero article.
- * Shows a large thumbnail, headline, 3-line excerpt, source badge, and time.
+ * Shows a thumbnail when available, otherwise a text-first featured treatment.
  */
 function HeroMainCard({
   article,
@@ -150,28 +156,39 @@ function HeroMainCard({
 
   const sourceLabel = SOURCE_LABELS[article.source];
   const keyword = extractKeyword(article.title);
+  const thumbnailUrl =
+    article.thumbnailUrl && !imgError ? article.thumbnailUrl : null;
 
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-md glass-panel",
+        "group glass-panel relative overflow-hidden rounded-md",
         "transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
-        "focus-within:ring-2 focus-within:ring-ms-accent/50",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
     >
-      <div className="flex flex-col lg:flex-row">
-        {/* Thumbnail — large, 3/4 width on desktop */}
-        <a
-          href={article.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative block aspect-[16/9] w-full overflow-hidden bg-ms-bg-tertiary lg:aspect-auto lg:min-h-[320px] lg:w-3/4"
-          aria-label={`Read: ${article.title}`}
-        >
-          {article.thumbnailUrl && !imgError ? (
+      {!thumbnailUrl && (
+        <span
+          className={cn(
+            "absolute top-0 left-0 h-1 w-full",
+            SOURCE_COLORS[article.source],
+          )}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className={cn("flex flex-col", thumbnailUrl && "lg:flex-row")}>
+        {thumbnailUrl && (
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-ms-bg-tertiary relative block aspect-[16/9] w-full overflow-hidden lg:aspect-auto lg:min-h-[320px] lg:w-3/4"
+            aria-label={`Read: ${article.title}`}
+          >
             <Image
-              src={article.thumbnailUrl}
+              src={thumbnailUrl}
               alt=""
               fill
               sizes="(max-width: 1024px) 100vw, 75vw"
@@ -179,28 +196,27 @@ function HeroMainCard({
               priority
               onError={() => setImgError(true)}
             />
-          ) : (
-            <div className="flex h-full min-h-[200px] items-center justify-center text-ms-text-muted lg:min-h-[320px]">
-              <span className="text-6xl" role="img" aria-hidden="true">
-                {sourceLabel?.[0] ?? "?"}
-              </span>
-            </div>
-          )}
 
-          {/* Source brand color indicator bar */}
-          <span
-            className={cn(
-              "absolute bottom-0 left-0 h-1 w-full",
-              SOURCE_COLORS[article.source],
-            )}
-            aria-hidden="true"
-          />
-        </a>
+            {/* Source brand color indicator bar */}
+            <span
+              className={cn(
+                "absolute bottom-0 left-0 h-1 w-full",
+                SOURCE_COLORS[article.source],
+              )}
+              aria-hidden="true"
+            />
+          </a>
+        )}
 
         {/* Content — right side on desktop, below on mobile */}
-        <div className="flex flex-1 flex-col justify-center gap-3 bg-ms-bg-secondary/40 p-5 backdrop-blur-sm lg:p-6">
+        <div
+          className={cn(
+            "bg-ms-bg-secondary/40 flex flex-1 flex-col justify-center gap-3 p-5 backdrop-blur-sm lg:p-6",
+            !thumbnailUrl && "min-h-[260px] sm:min-h-[300px] lg:min-h-[320px]",
+          )}
+        >
           {/* Source badge + time */}
-          <div className="flex items-center gap-2 text-xs text-ms-text-muted">
+          <div className="text-ms-text-muted flex items-center gap-2 text-xs">
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
@@ -222,7 +238,10 @@ function HeroMainCard({
             {article.score > 0 && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums" title={`${article.score} points`}>
+                <span
+                  className="font-mono tabular-nums"
+                  title={`${article.score} points`}
+                >
                   {formatScore(article.score)}
                 </span>
               </>
@@ -230,7 +249,7 @@ function HeroMainCard({
           </div>
 
           {/* Title */}
-          <h2 className="text-xl font-bold leading-tight text-ms-text-primary sm:text-2xl">
+          <h2 className="text-ms-text-primary text-xl leading-tight font-bold sm:text-2xl">
             <a
               href={article.url}
               target="_blank"
@@ -243,7 +262,7 @@ function HeroMainCard({
 
           {/* Excerpt — 3-line clamp */}
           {article.excerpt && (
-            <p className="line-clamp-3 text-sm leading-relaxed text-ms-text-secondary">
+            <p className="text-ms-text-secondary line-clamp-3 text-sm leading-relaxed">
               {article.excerpt}
             </p>
           )}
@@ -253,8 +272,8 @@ function HeroMainCard({
       {/* Hover action buttons */}
       <div
         className={cn(
-          "absolute right-3 top-3 flex gap-1",
-          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+          "absolute top-3 right-3 flex gap-1",
+          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
         )}
       >
         <button
@@ -264,7 +283,7 @@ function HeroMainCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+            "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
@@ -290,7 +309,7 @@ function HeroMainCard({
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-8 items-center justify-center rounded-md glass-subtle transition-colors",
+                "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label="Hide options"
@@ -300,7 +319,7 @@ function HeroMainCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 bg-ms-bg-secondary border-ms-border"
+            className="bg-ms-bg-secondary border-ms-border w-56"
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenuItem
@@ -309,7 +328,7 @@ function HeroMainCard({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <EyeOff className="size-4 text-ms-text-muted" />
+              <EyeOff className="text-ms-text-muted size-4" />
               Hide this article
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -318,16 +337,14 @@ function HeroMainCard({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Ban className="size-4 text-ms-text-muted" />
+              <Ban className="text-ms-text-muted size-4" />
               Hide from {sourceLabel}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "topic", targetId: keyword })
-              }
+              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Tag className="size-4 text-ms-text-muted" />
+              <Tag className="text-ms-text-muted size-4" />
               Hide topic: {keyword}
             </DropdownMenuItem>
           </DropdownMenuContent>

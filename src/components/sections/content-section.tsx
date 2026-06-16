@@ -47,7 +47,10 @@ export function ContentSection({
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label={title} className={cn("flex flex-col gap-3", className)}>
+    <section
+      aria-label={title}
+      className={cn("flex min-w-0 flex-col gap-3", className)}
+    >
       <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} />
 
       {/* Mobile: horizontal scroll  |  Tablet+: vertical stack */}

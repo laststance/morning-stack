@@ -428,11 +428,11 @@ export function SnsSection({
   if (!hasBluesky && !hasYoutube) return null;
 
   return (
-    <section aria-label="Social Media" className="flex flex-col gap-4">
+    <section aria-label="Social Media" className="flex min-w-0 flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Bluesky sub-section */}
         {hasBluesky && (
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🦋" title="Bluesky" />
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none sm:flex-col sm:overflow-x-visible sm:pb-0">
               {blueskyArticles.slice(0, 3).map((article) => (
@@ -451,7 +451,7 @@ export function SnsSection({
 
         {/* YouTube sub-section */}
         {hasYoutube && (
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🎬" title="YouTube" />
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none sm:flex-col sm:overflow-x-visible sm:pb-0">
               {youtubeArticles.slice(0, 3).map((article) => (

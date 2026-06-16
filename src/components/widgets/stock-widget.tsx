@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnavailableWidgetState } from "@/components/widgets/unavailable-widget-state";
 import { cn } from "@/lib/utils";
 import type { StockData } from "@/lib/sources/stocks";
 
@@ -37,25 +38,22 @@ function formatChangePercent(pct: number): string {
 export function StockWidget({ data }: StockWidgetProps) {
   if (data.length === 0) {
     return (
-      <Card className="glass-panel rounded-md border-ms-glass-border">
-        <CardContent className="py-4">
-          <p className="text-center text-sm text-ms-text-muted">
-            Market data unavailable
-          </p>
-        </CardContent>
-      </Card>
+      <UnavailableWidgetState
+        title="Markets unavailable"
+        detail="No market snapshot for this edition."
+      />
     );
   }
 
   return (
-    <Card className="glass-panel rounded-md border-ms-glass-border">
-      <CardHeader className="pb-0 pt-3">
-        <CardTitle className="text-[10px] font-mono font-medium uppercase tracking-[0.2em] text-ms-text-muted">
+    <Card className="glass-panel border-ms-glass-border rounded-md">
+      <CardHeader className="pt-3 pb-0">
+        <CardTitle className="text-ms-text-muted font-mono text-[10px] font-medium uppercase">
           Markets
         </CardTitle>
       </CardHeader>
       <CardContent className="pb-3">
-        <ul className="divide-y divide-ms-border" role="list">
+        <ul className="divide-ms-border divide-y" role="list">
           {data.map((stock) => (
             <StockRow key={stock.symbol} stock={stock} />
           ))}
@@ -74,17 +72,17 @@ function StockRow({ stock }: { stock: StockData }) {
 
   return (
     <li className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
-      <span className="truncate text-sm font-medium text-ms-text-primary">
+      <span className="text-ms-text-primary truncate text-sm font-medium">
         {stock.name}
       </span>
 
       <div className="flex shrink-0 flex-col items-end">
-        <span className="font-mono text-sm tabular-nums text-ms-text-primary">
+        <span className="text-ms-text-primary font-mono text-sm tabular-nums">
           {formatPrice(stock.price, stock.currency)}
         </span>
         <span
           className={cn(
-            "font-mono text-xs tabular-nums font-medium",
+            "font-mono text-xs font-medium tabular-nums",
             isPositive && "text-ms-positive",
             isNegative && "text-ms-negative",
             !isPositive && !isNegative && "text-ms-text-muted",
@@ -104,7 +102,7 @@ function StockRow({ stock }: { stock: StockData }) {
 export function StockWidgetSkeleton() {
   return (
     <Card className="border-ms-border bg-ms-bg-secondary">
-      <CardHeader className="pb-0 pt-4">
+      <CardHeader className="pt-4 pb-0">
         <Skeleton className="h-3 w-16" />
       </CardHeader>
       <CardContent className="pb-4">

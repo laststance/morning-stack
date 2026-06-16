@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnavailableWidgetState } from "@/components/widgets/unavailable-widget-state";
 import type { WeatherData } from "@/lib/sources/weather";
 
 export interface WeatherWidgetProps {
@@ -20,70 +21,82 @@ export interface WeatherWidgetProps {
 export function WeatherWidget({ data }: WeatherWidgetProps) {
   if (!data) {
     return (
-      <Card className="glass-panel rounded-md border-ms-glass-border">
-        <CardContent className="py-4">
-          <p className="text-center text-sm text-ms-text-muted">
-            Weather data unavailable
-          </p>
-        </CardContent>
-      </Card>
+      <UnavailableWidgetState
+        title="Weather unavailable"
+        detail="No weather snapshot for this edition."
+      />
     );
   }
 
   return (
-    <Card className="glass-panel rounded-md border-ms-glass-border">
-      <CardHeader className="pb-0 pt-4">
-        <CardTitle className="text-[10px] font-mono font-medium uppercase tracking-[0.2em] text-ms-text-muted">
+    <Card className="glass-panel border-ms-glass-border rounded-md">
+      <CardHeader className="pt-4 pb-0">
+        <CardTitle className="text-ms-text-muted font-mono text-[10px] font-medium uppercase">
           Weather
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 pb-4">
         {/* Current conditions */}
         <div className="flex items-center gap-3">
-          <span className="-ml-1 shrink-0 text-4xl" role="img" aria-label={data.condition}>
+          <span
+            className="-ml-1 shrink-0 text-4xl"
+            role="img"
+            aria-label={data.condition}
+          >
             {data.iconCode}
           </span>
 
           <div className="min-w-0">
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-3xl font-semibold tabular-nums text-ms-text-primary">
+              <span className="text-ms-text-primary font-mono text-3xl font-semibold tabular-nums">
                 {data.temperatureCelsius}°
               </span>
-              <span className="text-sm text-ms-text-muted">C</span>
+              <span className="text-ms-text-muted text-sm">C</span>
             </div>
-            <p className="truncate text-sm text-ms-text-secondary">
+            <p className="text-ms-text-secondary truncate text-sm">
               {data.condition}
             </p>
-            <p className="truncate text-xs text-ms-text-muted">{data.city}</p>
+            <p className="text-ms-text-muted truncate text-xs">{data.city}</p>
           </div>
         </div>
 
         {/* Humidity & Wind */}
-        <div className="flex gap-4 text-xs text-ms-text-muted">
+        <div className="text-ms-text-muted flex gap-4 text-xs">
           <span className="flex items-center gap-1">
-            <span role="img" aria-label="humidity">💧</span>
+            <span role="img" aria-label="humidity">
+              💧
+            </span>
             {data.humidity}%
           </span>
           <span className="flex items-center gap-1">
-            <span role="img" aria-label="wind">💨</span>
+            <span role="img" aria-label="wind">
+              💨
+            </span>
             {data.windSpeed} km/h
           </span>
         </div>
 
         {/* 3-day forecast */}
         {data.forecast.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 border-t border-ms-glass-border pt-3">
+          <div className="border-ms-glass-border grid grid-cols-3 gap-2 border-t pt-3">
             {data.forecast.map((day) => {
               const label = formatDayLabel(day.date);
               return (
-                <div key={day.date} className="flex flex-col items-center gap-0.5">
-                  <span className="text-[10px] font-mono uppercase text-ms-text-muted">
+                <div
+                  key={day.date}
+                  className="flex flex-col items-center gap-0.5"
+                >
+                  <span className="text-ms-text-muted font-mono text-[10px] uppercase">
                     {label}
                   </span>
-                  <span className="text-lg" role="img" aria-label={day.condition}>
+                  <span
+                    className="text-lg"
+                    role="img"
+                    aria-label={day.condition}
+                  >
                     {day.icon}
                   </span>
-                  <div className="flex gap-1 text-[10px] font-mono tabular-nums">
+                  <div className="flex gap-1 font-mono text-[10px] tabular-nums">
                     <span className="text-ms-text-primary">{day.tempMax}°</span>
                     <span className="text-ms-text-muted">{day.tempMin}°</span>
                   </div>
@@ -115,8 +128,8 @@ function formatDayLabel(dateStr: string): string {
  */
 export function WeatherWidgetSkeleton() {
   return (
-    <Card className="glass-panel rounded-md border-ms-glass-border">
-      <CardHeader className="pb-0 pt-4">
+    <Card className="glass-panel border-ms-glass-border rounded-md">
+      <CardHeader className="pt-4 pb-0">
         <Skeleton className="h-3 w-16" />
       </CardHeader>
       <CardContent className="space-y-3 pb-4">
@@ -132,7 +145,7 @@ export function WeatherWidgetSkeleton() {
           <Skeleton className="h-3 w-12" />
           <Skeleton className="h-3 w-16" />
         </div>
-        <div className="grid grid-cols-3 gap-2 border-t border-ms-glass-border pt-3">
+        <div className="border-ms-glass-border grid grid-cols-3 gap-2 border-t pt-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1">
               <Skeleton className="h-3 w-8" />

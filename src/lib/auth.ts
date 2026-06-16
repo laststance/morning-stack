@@ -5,6 +5,23 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 
+export const authProviderAvailability = {
+  github:
+    Boolean(process.env.AUTH_GITHUB_ID?.trim()) &&
+    Boolean(process.env.AUTH_GITHUB_SECRET?.trim()),
+  google:
+    Boolean(process.env.AUTH_GOOGLE_ID?.trim()) &&
+    Boolean(process.env.AUTH_GOOGLE_SECRET?.trim()),
+};
+
+export const hasAuthProvider =
+  authProviderAvailability.github || authProviderAvailability.google;
+
+const providers = [
+  ...(authProviderAvailability.github ? [GitHub] : []),
+  ...(authProviderAvailability.google ? [Google] : []),
+];
+
 /**
  * Auth.js v5 configuration with Google and GitHub OAuth providers.
  * Uses Drizzle adapter for database session persistence in Supabase PostgreSQL.
@@ -21,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
-  providers: [GitHub, Google],
+  providers,
   pages: {
     signIn: "/login",
   },

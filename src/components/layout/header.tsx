@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import {
-  setEditionType,
-  type EditionType,
-} from "@/lib/features/edition-slice";
+import { setEditionType, type EditionType } from "@/lib/features/edition-slice";
 import { toggleSidebar, setSidebarOpen } from "@/lib/features/ui-slice";
 import { Button } from "@/components/ui/button";
 
@@ -16,8 +13,12 @@ import { Button } from "@/components/ui/button";
 const emptySubscribe = () => () => {};
 
 /**
- * Format edition date for display.
- * e.g. "Feb 7, 2026 - Morning Edition"
+ * Format the selected edition metadata for the compact header subtitle.
+ * @param dateStr - Edition date in `YYYY-MM-DD` format.
+ * @param editionType - Selected edition type from Redux.
+ * @returns Human-readable date and edition label.
+ * @example
+ * formatEditionDate("2026-06-17", "morning") // => "Jun 17, 2026 - Morning Edition"
  */
 function formatEditionDate(dateStr: string, editionType: EditionType): string {
   const date = new Date(dateStr + "T00:00:00");
@@ -26,7 +27,8 @@ function formatEditionDate(dateStr: string, editionType: EditionType): string {
     day: "numeric",
     year: "numeric",
   });
-  const label = editionType === "morning" ? "Morning Edition" : "Evening Edition";
+  const label =
+    editionType === "morning" ? "Morning Edition" : "Evening Edition";
   return `${formatted} - ${label}`;
 }
 
@@ -53,25 +55,29 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 glass-elevated">
-      <div className="mx-auto flex h-12 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="glass-elevated sticky top-0 z-50">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo */}
         <Link
           href="/"
-          className="shrink-0 text-lg font-bold text-ms-text-primary"
+          className="text-ms-text-primary shrink-0 text-lg font-bold"
         >
           MorningStack
         </Link>
 
         {/* Center: Edition tabs + date (hidden on mobile) */}
-        <div className="hidden flex-col items-center sm:flex">
-          <div className="flex gap-1" role="tablist" aria-label="Edition selector">
+        <div className="hidden flex-col items-center gap-0.5 sm:flex">
+          <div
+            className="flex gap-1"
+            role="tablist"
+            aria-label="Edition selector"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.type}
                 role="tab"
                 aria-selected={editionType === tab.type}
-                className={`relative cursor-pointer px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
+                className={`relative cursor-pointer px-3 pt-1 pb-1.5 text-xs font-medium uppercase transition-colors ${
                   editionType === tab.type
                     ? "text-ms-accent"
                     : "text-ms-text-muted hover:text-ms-text-secondary"
@@ -81,12 +87,12 @@ export function Header() {
                 <span aria-hidden="true">{tab.icon}</span> {tab.label}
                 {/* Active tab underline */}
                 {editionType === tab.type && (
-                  <span className="absolute inset-x-0 -bottom-[9px] h-0.5 bg-ms-accent" />
+                  <span className="bg-ms-accent absolute inset-x-3 bottom-0 h-0.5 rounded-full" />
                 )}
               </button>
             ))}
           </div>
-          <span className="mt-0.5 text-xs text-ms-text-muted">
+          <span className="text-ms-text-muted text-xs leading-none">
             {formatEditionDate(editionDate, editionType)}
           </span>
         </div>
@@ -97,7 +103,7 @@ export function Header() {
             asChild
             variant="ghost"
             size="icon-sm"
-            className="cursor-pointer text-ms-text-muted hover:text-ms-text-primary"
+            className="text-ms-text-muted hover:text-ms-text-primary cursor-pointer"
             aria-label="Bookmarks"
           >
             <Link href="/bookmarks">
@@ -109,7 +115,7 @@ export function Header() {
             asChild
             variant="ghost"
             size="icon-sm"
-            className="cursor-pointer text-ms-text-muted hover:text-ms-text-primary"
+            className="text-ms-text-muted hover:text-ms-text-primary cursor-pointer"
             aria-label="Settings"
           >
             <Link href="/settings">
@@ -120,12 +126,22 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon-sm"
-            className="cursor-pointer text-ms-text-muted hover:text-ms-text-primary"
-            aria-label={mounted && resolvedTheme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-            onClick={() => setNextTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="text-ms-text-muted hover:text-ms-text-primary cursor-pointer"
+            aria-label={
+              mounted && resolvedTheme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme"
+            }
+            onClick={() =>
+              setNextTheme(resolvedTheme === "dark" ? "light" : "dark")
+            }
           >
             {mounted ? (
-              resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />
+              resolvedTheme === "dark" ? (
+                <SunIcon />
+              ) : (
+                <MoonIcon />
+              )
             ) : (
               <span className="size-5" />
             )}
@@ -144,7 +160,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="cursor-pointer text-ms-text-muted hover:text-ms-text-primary"
+                className="text-ms-text-muted hover:text-ms-text-primary cursor-pointer"
                 onClick={() => signOut({ callbackUrl: "/" })}
               >
                 Sign out
@@ -155,7 +171,7 @@ export function Header() {
               asChild
               variant="outline"
               size="sm"
-              className="ml-2 cursor-pointer border-ms-border text-ms-text-primary hover:bg-ms-bg-tertiary"
+              className="border-ms-border text-ms-text-primary hover:bg-ms-bg-tertiary ml-2 cursor-pointer"
             >
               <Link href="/login">Login</Link>
             </Button>
@@ -166,7 +182,7 @@ export function Header() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="cursor-pointer text-ms-text-muted hover:text-ms-text-primary sm:hidden"
+          className="text-ms-text-muted hover:text-ms-text-primary cursor-pointer sm:hidden"
           aria-label={sidebarOpen ? "Close menu" : "Open menu"}
           aria-expanded={sidebarOpen}
           onClick={() => dispatch(toggleSidebar())}
@@ -178,11 +194,15 @@ export function Header() {
       {/* Mobile menu dropdown */}
       {sidebarOpen && (
         <nav
-          className="border-t border-ms-glass-border bg-ms-bg-primary px-4 pb-4 sm:hidden"
+          className="border-ms-glass-border bg-ms-bg-primary border-t px-4 pb-4 sm:hidden"
           aria-label="Mobile navigation"
         >
           {/* Edition tabs */}
-          <div className="flex gap-1 border-b border-ms-border py-3" role="tablist" aria-label="Edition selector">
+          <div
+            className="border-ms-border flex gap-1 border-b py-3"
+            role="tablist"
+            aria-label="Edition selector"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.type}
@@ -204,7 +224,7 @@ export function Header() {
           </div>
 
           {/* Edition date */}
-          <p className="py-2 text-xs text-ms-text-muted">
+          <p className="text-ms-text-muted py-2 text-xs">
             {formatEditionDate(editionDate, editionType)}
           </p>
 
@@ -212,21 +232,23 @@ export function Header() {
           <div className="flex flex-col gap-1">
             <Link
               href="/bookmarks"
-              className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary"
+              className="text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm"
               onClick={() => dispatch(setSidebarOpen(false))}
             >
               <BookmarkIcon /> Bookmarks
             </Link>
             <Link
               href="/settings"
-              className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary"
+              className="text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm"
               onClick={() => dispatch(setSidebarOpen(false))}
             >
               <SettingsIcon /> Settings
             </Link>
             <button
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary"
-              onClick={() => setNextTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              className="text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm"
+              onClick={() =>
+                setNextTheme(resolvedTheme === "dark" ? "light" : "dark")
+              }
             >
               {mounted && resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}{" "}
               {mounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
@@ -234,7 +256,7 @@ export function Header() {
 
             {session?.user ? (
               <button
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary"
+                className="text-ms-text-secondary hover:bg-ms-bg-tertiary hover:text-ms-text-primary flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm"
                 onClick={() => {
                   dispatch(setSidebarOpen(false));
                   signOut({ callbackUrl: "/" });
@@ -253,7 +275,7 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm text-ms-accent hover:bg-ms-bg-tertiary"
+                className="text-ms-accent hover:bg-ms-bg-tertiary flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm"
                 onClick={() => dispatch(setSidebarOpen(false))}
               >
                 Login
@@ -321,10 +343,7 @@ function MenuIcon() {
       className="size-5"
       aria-hidden="true"
     >
-      <path
-        strokeLinecap="round"
-        d="M3 5h14M3 10h14M3 15h14"
-      />
+      <path strokeLinecap="round" d="M3 5h14M3 10h14M3 15h14" />
     </svg>
   );
 }

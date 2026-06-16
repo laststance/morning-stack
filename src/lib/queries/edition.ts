@@ -151,56 +151,61 @@ export async function getWidgetData(): Promise<WidgetData> {
 // ─── Internal Helpers ────────────────────────────────────────────────
 
 /**
- * Filter articles based on the current user's hidden items.
- *
- * Queries the `hidden_items` table for the authenticated user and removes
- * articles matching hidden article IDs, hidden sources, or hidden topics
- * (case-insensitive title substring match).
- *
- * Returns the original list unchanged if no user is authenticated or
- * no hidden items exist.
+ * Filter articles for a signed-in user without making auth required for public feeds.
+ * @param allArticles - Articles loaded from the published edition.
+ * @returns Filtered articles for signed-in users, or the original list when auth/filtering is unavailable.
+ * @example
+ * const visibleArticles = await applyHiddenFilters(allArticles);
  */
 async function applyHiddenFilters(allArticles: Article[]): Promise<Article[]> {
-  const session = await auth();
-  if (!session?.user?.id) return allArticles;
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return allArticles;
 
-  const hiddenRows = await db
-    .select({
-      targetType: hiddenItems.targetType,
-      targetId: hiddenItems.targetId,
-    })
-    .from(hiddenItems)
-    .where(eq(hiddenItems.userId, session.user.id));
+    const hiddenRows = await db
+      .select({
+        targetType: hiddenItems.targetType,
+        targetId: hiddenItems.targetId,
+      })
+      .from(hiddenItems)
+      .where(eq(hiddenItems.userId, session.user.id));
 
-  if (hiddenRows.length === 0) return allArticles;
+    if (hiddenRows.length === 0) return allArticles;
 
-  const hiddenArticleIds = new Set<string>();
-  const hiddenSources = new Set<string>();
-  const hiddenTopics: string[] = [];
+    const hiddenArticleIds = new Set<string>();
+    const hiddenSources = new Set<string>();
+    const hiddenTopics: string[] = [];
 
-  for (const row of hiddenRows) {
-    switch (row.targetType) {
-      case "article":
-        hiddenArticleIds.add(row.targetId);
-        break;
-      case "source":
-        hiddenSources.add(row.targetId);
-        break;
-      case "topic":
-        hiddenTopics.push(row.targetId.toLowerCase());
-        break;
-    }
-  }
-
-  return allArticles.filter((article) => {
-    if (hiddenArticleIds.has(article.externalId)) return false;
-    if (hiddenSources.has(article.source)) return false;
-    if (hiddenTopics.length > 0) {
-      const titleLower = article.title.toLowerCase();
-      for (const topic of hiddenTopics) {
-        if (titleLower.includes(topic)) return false;
+    for (const row of hiddenRows) {
+      switch (row.targetType) {
+        case "article":
+          hiddenArticleIds.add(row.targetId);
+          break;
+        case "source":
+          hiddenSources.add(row.targetId);
+          break;
+        case "topic":
+          hiddenTopics.push(row.targetId.toLowerCase());
+          break;
       }
     }
-    return true;
-  });
+
+    return allArticles.filter((article) => {
+      if (hiddenArticleIds.has(article.externalId)) return false;
+      if (hiddenSources.has(article.source)) return false;
+      if (hiddenTopics.length > 0) {
+        const titleLower = article.title.toLowerCase();
+        for (const topic of hiddenTopics) {
+          if (titleLower.includes(topic)) return false;
+        }
+      }
+      return true;
+    });
+  } catch (error) {
+    console.error(
+      "[Edition] Hidden filters unavailable; returning unfiltered public feed:",
+      error,
+    );
+    return allArticles;
+  }
 }

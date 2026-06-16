@@ -9,6 +9,7 @@ import {
 import { getBookmarkedIds } from "@/app/actions/bookmarks";
 import { getHiddenState } from "@/app/actions/hidden";
 import { HomeContent } from "@/components/home-content";
+import type { HomeContentProps } from "@/components/home-content";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Route Segment Config ───────────────────────────────────────────
@@ -36,6 +37,14 @@ export const metadata: Metadata = {
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────
+
+type HiddenState = NonNullable<HomeContentProps["hiddenState"]>;
+
+const EMPTY_HIDDEN_STATE: HiddenState = {
+  hiddenArticleIds: [],
+  hiddenSources: [],
+  hiddenTopics: [],
+};
 
 /**
  * Determine the default edition type based on the current hour in Asia/Tokyo.
@@ -109,8 +118,10 @@ export default async function HomePage() {
  * show a skeleton while the DB and Redis queries resolve.
  */
 /**
- * Fetch all edition data, returning null on any failure.
- * Separated from JSX to satisfy react-hooks/error-boundaries lint rule.
+ * Fetch all edition data while keeping public news independent from personalization.
+ * @returns Edition data when DB content exists, otherwise `null` for the no-edition state.
+ * @example
+ * const data = await fetchEditionData();
  */
 async function fetchEditionData() {
   try {
@@ -120,8 +131,8 @@ async function fetchEditionData() {
     const [edition, widgets, bookmarkedIds, hiddenState] = await Promise.all([
       getEdition(editionType, today).then((e) => e ?? getLatestEdition()),
       getWidgetData(),
-      getBookmarkedIds(),
-      getHiddenState(),
+      getSafeBookmarkedIds(),
+      getSafeHiddenState(),
     ]);
 
     if (!edition) return null;
@@ -129,6 +140,42 @@ async function fetchEditionData() {
     return { edition, widgets, bookmarkedIds, hiddenState };
   } catch {
     return null;
+  }
+}
+
+/**
+ * Read bookmark IDs without letting Auth.js configuration errors hide public editions.
+ * @returns Bookmark IDs for signed-in users, or an empty list when unavailable.
+ * @example
+ * const bookmarkedIds = await getSafeBookmarkedIds();
+ */
+async function getSafeBookmarkedIds(): Promise<string[]> {
+  try {
+    return await getBookmarkedIds();
+  } catch (error) {
+    console.error(
+      "[HomePage] Bookmark personalization unavailable; rendering public feed:",
+      error,
+    );
+    return [];
+  }
+}
+
+/**
+ * Read hidden filters without letting Auth.js configuration errors hide public editions.
+ * @returns Hidden filter state for signed-in users, or an empty state when unavailable.
+ * @example
+ * const hiddenState = await getSafeHiddenState();
+ */
+async function getSafeHiddenState(): Promise<HiddenState> {
+  try {
+    return await getHiddenState();
+  } catch (error) {
+    console.error(
+      "[HomePage] Hidden-item personalization unavailable; rendering public feed:",
+      error,
+    );
+    return EMPTY_HIDDEN_STATE;
   }
 }
 
@@ -162,10 +209,10 @@ function NoEditionFallback() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-ms-text-primary">
+        <h2 className="text-ms-text-primary text-2xl font-bold tracking-tight">
           No edition available
         </h2>
-        <p className="mt-2 text-ms-text-secondary">
+        <p className="text-ms-text-secondary mt-2">
           The next edition is being prepared. Check back soon!
         </p>
       </div>

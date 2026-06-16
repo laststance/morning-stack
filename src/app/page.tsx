@@ -241,7 +241,7 @@ function HomePageSkeleton() {
             ))}
           </div>
         </div>
-        <div className="order-first flex flex-col gap-4 lg:order-last lg:flex-[1]">
+        <div className="flex flex-col gap-3 lg:flex-[1]">
           <Skeleton className="h-28 rounded-lg" />
           <Skeleton className="h-40 rounded-lg" />
         </div>

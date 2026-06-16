@@ -321,9 +321,9 @@ export function HomeContent({
           />
         </div>
 
-        {/* Widgets sidebar — 1/4 width on desktop, full-width on mobile above hero */}
+        {/* Widgets sidebar — secondary on mobile, right rail on desktop. */}
         <aside
-          className="order-first flex flex-col gap-4 lg:order-last lg:flex-[1]"
+          className="flex flex-col gap-3 lg:flex-[1]"
           aria-label="Daily widgets"
         >
           <WeatherWidget data={weather} />

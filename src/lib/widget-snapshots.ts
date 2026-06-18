@@ -12,6 +12,22 @@ export interface WidgetData {
   stocks: StockData[];
 }
 
+/** Controls external persistence use for production calls and isolated tests. */
+export interface WidgetSnapshotSaveOptions {
+  /** Write the latest widget payload to Redis when true. */
+  useCache?: boolean;
+  /** Write widget payload rows to Supabase when true. */
+  useDatabase?: boolean;
+}
+
+/** Controls external reads for the home page and isolated tests. */
+export interface WidgetSnapshotReadOptions {
+  /** Read and repopulate Redis cache when true. */
+  useCache?: boolean;
+  /** Read the durable Supabase fallback when true. */
+  useDatabase?: boolean;
+}
+
 /** Redis key used by the cron collector for latest edition widget data. */
 export const WIDGET_CACHE_KEY = "edition:widgets";
 
@@ -24,18 +40,26 @@ const STOCK_SYMBOL_ORDER = ["^N225", "^GSPC", "^IXIC"];
 /**
  * Store widget snapshots in Redis and Supabase so widgets survive Redis misses.
  * @param widgetData - Weather and stocks fetched during cron or manual refresh.
+ * @param options - Persistence policy for callers that must isolate external state.
  * @returns Resolves after best-effort persistence attempts finish.
  * @example
- * await saveWidgetSnapshots({ weather, stocks });
+ * await saveWidgetSnapshots({ weather, stocks }, { useCache: false });
  */
 export async function saveWidgetSnapshots(
   widgetData: WidgetData,
+  options: WidgetSnapshotSaveOptions = {},
 ): Promise<void> {
-  const tasks = [
-    cacheSet(WIDGET_CACHE_KEY, widgetData, WIDGET_CACHE_TTL),
-    saveWeatherSnapshot(widgetData.weather),
-    saveStockSnapshots(widgetData.stocks),
-  ];
+  const { useCache = true, useDatabase = true } = options;
+  const tasks: Array<Promise<void>> = [];
+
+  if (useCache) {
+    tasks.push(cacheSet(WIDGET_CACHE_KEY, widgetData, WIDGET_CACHE_TTL));
+  }
+
+  if (useDatabase) {
+    tasks.push(saveWeatherSnapshot(widgetData.weather));
+    tasks.push(saveStockSnapshots(widgetData.stocks));
+  }
 
   const results = await Promise.allSettled(tasks);
 
@@ -49,19 +73,32 @@ export async function saveWidgetSnapshots(
 
 /**
  * Read widget data from Redis first, then fall back to the latest Supabase rows.
+ * @param options - Read policy for callers that must isolate external state.
  * @returns Latest widget data, or empty unavailable values when no snapshot exists.
  * @example
- * const widgets = await getCachedOrPersistedWidgetData();
+ * const widgets = await getCachedOrPersistedWidgetData({ useCache: false });
  */
-export async function getCachedOrPersistedWidgetData(): Promise<WidgetData> {
-  const cached = await cacheGet<WidgetData>(WIDGET_CACHE_KEY);
-  if (cached) return cached;
+export async function getCachedOrPersistedWidgetData(
+  options: WidgetSnapshotReadOptions = {},
+): Promise<WidgetData> {
+  const { useCache = true, useDatabase = true } = options;
 
-  const persisted = await getPersistedWidgetSnapshots();
+  if (useCache) {
+    const cached = await cacheGet<WidgetData>(WIDGET_CACHE_KEY);
+    if (cached) return cached;
+  }
+
+  const persisted = useDatabase
+    ? await getPersistedWidgetSnapshots()
+    : { weather: null, stocks: [] };
 
   // Repopulate Redis when possible so repeated page renders stay cheap.
-  if (persisted.weather || persisted.stocks.length > 0) {
-    void cacheSet(WIDGET_CACHE_KEY, persisted, WIDGET_CACHE_TTL);
+  if (useCache && (persisted.weather || persisted.stocks.length > 0)) {
+    void cacheSet(WIDGET_CACHE_KEY, persisted, WIDGET_CACHE_TTL).catch(
+      (error: unknown) => {
+        console.error("[Widgets] Cache repopulation failed:", error);
+      },
+    );
   }
 
   return persisted;
@@ -156,7 +193,7 @@ async function getPersistedWidgetSnapshots(): Promise<WidgetData> {
  * sortStocks(stocks);
  */
 function sortStocks(stocks: StockData[]): StockData[] {
-  return stocks.toSorted((a, b) => {
+  return [...stocks].sort((a, b) => {
     const aIndex = STOCK_SYMBOL_ORDER.indexOf(a.symbol);
     const bIndex = STOCK_SYMBOL_ORDER.indexOf(b.symbol);
     const normalizedA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;

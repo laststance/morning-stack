@@ -26,7 +26,7 @@ test.describe("Stock Source", () => {
     };
 
     // Act
-    const stocks = await fetchStockData();
+    const stocks = await fetchStockData({ useCache: false });
 
     // Assert
     expect(requestedSymbols).toEqual(["^N225", "^GSPC", "^IXIC"]);
@@ -68,7 +68,7 @@ test.describe("Stock Source", () => {
       });
 
     // Act
-    const stocks = await fetchStockData();
+    const stocks = await fetchStockData({ useCache: false });
 
     // Assert
     expect(stocks).toEqual([]);
@@ -92,7 +92,7 @@ test.describe("Stock Source", () => {
     };
 
     // Act
-    const stocks = await fetchStockData();
+    const stocks = await fetchStockData({ useCache: false });
 
     // Assert
     expect(stocks.map((stock) => stock.symbol)).toEqual(["^N225", "^GSPC"]);

@@ -53,6 +53,12 @@ export interface StockData {
   currency: string;
 }
 
+/** Controls external cache use for production calls and isolated tests. */
+export interface StockFetchOptions {
+  /** Read/write Redis cache and use stale-cache fallback when true. */
+  useCache?: boolean;
+}
+
 // ─── Constants ──────────────────────────────────────────────────────
 
 /**
@@ -94,13 +100,22 @@ const CACHE_TTL_MARKET_CLOSED = 6 * 60 * 60;
  * - 15 minutes when JPX (Nikkei) or NYSE/NASDAQ is open.
  * - 6 hours when all markets are closed.
  *
+ * @param options - Cache policy for callers that must isolate external state.
  * @returns Array of {@link StockData}, or empty array if unavailable.
  * @throws Never — returns `[]` as a last resort.
+ * @example
+ * await fetchStockData({ useCache: false });
  */
-export async function fetchStockData(): Promise<StockData[]> {
+export async function fetchStockData(
+  options: StockFetchOptions = {},
+): Promise<StockData[]> {
+  const { useCache = true } = options;
+
   // 1. Try cache first
-  const cached = await cacheGet<StockData[]>(CACHE_KEY);
-  if (cached) return cached;
+  if (useCache) {
+    const cached = await cacheGet<StockData[]>(CACHE_KEY);
+    if (cached) return cached;
+  }
 
   try {
     const stockResults = await Promise.allSettled(
@@ -114,16 +129,22 @@ export async function fetchStockData(): Promise<StockData[]> {
 
     const ttl = getMarketAwareTTL();
 
-    // Write to cache (fire-and-forget — don't block the response)
-    void cacheSet(CACHE_KEY, stocks, ttl);
+    // Cache failures should not hide fresh market data.
+    if (useCache) {
+      void cacheSet(CACHE_KEY, stocks, ttl).catch((error: unknown) => {
+        console.error("[Stocks] Cache write failed:", error);
+      });
+    }
 
     return stocks;
   } catch (error) {
     console.error("[Stocks] Fetch failed, trying stale cache:", error);
 
     // 3. Fallback: re-read cache in case a prior request populated it
-    const stale = await cacheGet<StockData[]>(CACHE_KEY);
-    if (stale) return stale;
+    if (useCache) {
+      const stale = await cacheGet<StockData[]>(CACHE_KEY);
+      if (stale) return stale;
+    }
 
     return [];
   }
@@ -234,7 +255,14 @@ function mapChartToStockData(
  * getLatestClose([100, null, 101]);
  */
 function getLatestClose(closes?: Array<number | null>): number | undefined {
-  return closes?.findLast((close): close is number => typeof close === "number");
+  if (!closes) return undefined;
+
+  for (let index = closes.length - 1; index >= 0; index -= 1) {
+    const close = closes[index];
+    if (typeof close === "number") return close;
+  }
+
+  return undefined;
 }
 
 /**

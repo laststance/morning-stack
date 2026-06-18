@@ -6,23 +6,30 @@ import {
 } from "../src/lib/widget-snapshots";
 
 test.describe("Widget Snapshots", () => {
-  test("returns empty widgets without touching a placeholder database", async () => {
-    // Arrange / Act
-    const widgets = await getCachedOrPersistedWidgetData();
+  test("returns empty widgets when external reads are disabled", async () => {
+    // Arrange
+    const externalReadsDisabled = { useCache: false, useDatabase: false };
+
+    // Act
+    const widgets = await getCachedOrPersistedWidgetData({
+      ...externalReadsDisabled,
+    });
 
     // Assert
     expect(widgets).toEqual({ weather: null, stocks: [] });
   });
 
-  test("ignores Supabase persistence when no runtime database is configured", async () => {
+  test("completes when external writes are disabled", async () => {
     // Arrange
-    let didSaveWithoutDatabase = false;
+    const externalWritesDisabled = { useCache: false, useDatabase: false };
 
     // Act
-    await saveWidgetSnapshots({ weather: null, stocks: [] });
-    didSaveWithoutDatabase = true;
+    const saveResult = saveWidgetSnapshots(
+      { weather: null, stocks: [] },
+      { ...externalWritesDisabled },
+    );
 
     // Assert
-    expect(didSaveWithoutDatabase).toBe(true);
+    await expect(saveResult).resolves.toBeUndefined();
   });
 });

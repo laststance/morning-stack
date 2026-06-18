@@ -62,8 +62,8 @@ Widget data is collected alongside editions:
 
 | Widget | Source | Notes |
 | --- | --- | --- |
-| Weather | OpenWeatherMap | Cached as latest edition widget data when configured. |
-| Stocks | Market data source implementation | Cached as latest edition widget data when available. |
+| Weather | Open-Meteo Forecast API | No API key required. Cached in Redis when configured and persisted to Supabase `weather_cache`. |
+| Stocks | Yahoo Finance chart endpoint | Fetches Nikkei 225, S&P 500, and NASDAQ. Cached in Redis when configured and persisted to Supabase `stock_cache`. |
 
 ## Data Flow
 
@@ -76,7 +76,7 @@ Widget data is collected alongside editions:
 7. Scores are normalized and top items are selected.
 8. Articles are inserted into Supabase Postgres through Drizzle.
 9. The edition is marked `published`.
-10. Weather and stock widget data is cached through Upstash Redis when available.
+10. Weather and stock widget data is cached through Upstash Redis when available and persisted to Supabase widget cache tables as a durable fallback.
 
 ## Auth And Personalization
 
@@ -127,7 +127,6 @@ Signed-in features:
 | `GITHUB_TOKEN` | Optional | Raises GitHub API rate limits for PR collection. |
 | `YOUTUBE_API_KEY` | Optional | Enables YouTube Science & Technology video collection. |
 | `PRODUCTHUNT_API_TOKEN` | Optional | Enables Product Hunt launch collection. |
-| `OPENWEATHERMAP_API_KEY` | Optional | Enables weather widget collection. |
 
 Sources that require optional API keys degrade gracefully by returning cached data or an empty result.
 

@@ -3,10 +3,11 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { editions, articles, hiddenItems } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
-import { cacheGet } from "@/lib/cache";
+import {
+  getCachedOrPersistedWidgetData,
+  type WidgetData,
+} from "@/lib/widget-snapshots";
 import type { Article, ArticleSource } from "@/types/article";
-import type { WeatherData } from "@/lib/sources/weather";
-import type { StockData } from "@/lib/sources/stocks";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -23,17 +24,6 @@ export interface EditionData {
   /** Flat list of all articles (for the hero section). */
   allArticles: Article[];
 }
-
-/** Cached widget data shape (matches the cron collection output). */
-export interface WidgetData {
-  weather: WeatherData | null;
-  stocks: StockData[];
-}
-
-// ─── Constants ──────────────────────────────────────────────────────
-
-/** Redis key used by the cron collector for widget data. */
-const WIDGET_CACHE_KEY = "edition:widgets";
 
 // ─── Public API ─────────────────────────────────────────────────────
 
@@ -144,8 +134,7 @@ export async function getLatestEdition(): Promise<EditionData | null> {
  * Returns null weather and empty stocks array when cache is empty.
  */
 export async function getWidgetData(): Promise<WidgetData> {
-  const cached = await cacheGet<WidgetData>(WIDGET_CACHE_KEY);
-  return cached ?? { weather: null, stocks: [] };
+  return getCachedOrPersistedWidgetData();
 }
 
 // ─── Internal Helpers ────────────────────────────────────────────────

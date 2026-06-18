@@ -37,3 +37,15 @@ const postgresClient = postgres(resolvedDatabaseUrl, {
 export const db: PostgresJsDatabase<typeof schema> = drizzle(postgresClient, {
   schema,
 });
+
+/**
+ * Tells optional runtime features whether a real database connection is present.
+ * @returns
+ * - `true`: Runtime has a non-placeholder DATABASE_URL.
+ * - `false`: Local/build fallback is using the construction-only placeholder.
+ * @example
+ * if (!isRuntimeDatabaseConfigured()) return;
+ */
+export function isRuntimeDatabaseConfigured(): boolean {
+  return Boolean(databaseUrl && databaseUrl !== BUILD_ONLY_DATABASE_URL);
+}

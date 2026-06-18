@@ -15,7 +15,7 @@ import { fetchProductHuntArticles } from "@/lib/sources/producthunt";
 import { fetchGitHubPRs } from "@/lib/sources/github-prs";
 import { fetchWeather } from "@/lib/sources/weather";
 import { fetchStockData } from "@/lib/sources/stocks";
-import { cacheSet } from "@/lib/cache";
+import { saveWidgetSnapshots } from "@/lib/widget-snapshots";
 
 /** Edition type produced by the twice-daily collector. */
 export type EditionType = "morning" | "evening";
@@ -68,12 +68,6 @@ const SCORE_RANGES: Record<ArticleSource, { min: number; max: number }> = {
   world_news: { min: 0, max: 100 },
 };
 
-/** Cache key for latest edition widget data (weather/stocks). */
-const WIDGET_CACHE_KEY = "edition:widgets";
-
-/** Widget cache duration: 30 minutes. */
-const WIDGET_CACHE_TTL = 30 * 60;
-
 /**
  * Convert a route segment into an edition type for split Vercel cron paths.
  * @param value - Dynamic route segment from `/api/cron/collect/[edition]`.
@@ -115,6 +109,10 @@ export async function handleCollectRequest(
 
     const existingEdition = await findExistingEdition(editionType, today);
     if (existingEdition?.status === "published") {
+      const { weatherData, stockData } = await fetchWidgetSources();
+      const widgetResults = getWidgetSourceResults(weatherData, stockData);
+      await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
+
       console.log(
         `[Cron] ${editionType} edition for ${today} already published (${existingEdition.id}), skipping`,
       );
@@ -124,6 +122,7 @@ export async function handleCollectRequest(
         editionId: existingEdition.id,
         editionType,
         date: today,
+        widgets: widgetResults,
       });
     }
 
@@ -158,25 +157,8 @@ export async function handleCollectRequest(
       })),
     );
 
-    sourceResults.push({
-      source: "weather",
-      status: weatherData ? "success" : "failure",
-      count: weatherData ? 1 : 0,
-      error: weatherData ? undefined : "No data",
-    });
-
-    sourceResults.push({
-      source: "stocks",
-      status: stockData.length > 0 ? "success" : "failure",
-      count: stockData.length,
-      error: stockData.length > 0 ? undefined : "No data",
-    });
-
-    await cacheSet(
-      WIDGET_CACHE_KEY,
-      { weather: weatherData, stocks: stockData },
-      WIDGET_CACHE_TTL,
-    );
+    sourceResults.push(...getWidgetSourceResults(weatherData, stockData));
+    await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
 
     await db
       .update(editions)
@@ -368,6 +350,56 @@ async function fetchAllSources(): Promise<{
       weatherResult.status === "fulfilled" ? weatherResult.value : null,
     stockData: stockResult.status === "fulfilled" ? stockResult.value : [],
   };
+}
+
+/**
+ * Fetch only weather and stock widgets for a skipped already-published edition.
+ * @returns Current widget source data, using empty values when a source fails.
+ * @example
+ * const widgets = await fetchWidgetSources();
+ */
+async function fetchWidgetSources(): Promise<{
+  weatherData: Awaited<ReturnType<typeof fetchWeather>>;
+  stockData: Awaited<ReturnType<typeof fetchStockData>>;
+}> {
+  const [weatherResult, stockResult] = await Promise.allSettled([
+    fetchWeather(),
+    fetchStockData(),
+  ]);
+
+  return {
+    weatherData:
+      weatherResult.status === "fulfilled" ? weatherResult.value : null,
+    stockData: stockResult.status === "fulfilled" ? stockResult.value : [],
+  };
+}
+
+/**
+ * Convert widget values into source status entries for cron responses.
+ * @param weatherData - Weather snapshot, or null when unavailable.
+ * @param stockData - Stock snapshots, or an empty array when unavailable.
+ * @returns Source results for weather and stocks.
+ * @example
+ * getWidgetSourceResults(weatherData, stockData);
+ */
+function getWidgetSourceResults(
+  weatherData: Awaited<ReturnType<typeof fetchWeather>>,
+  stockData: Awaited<ReturnType<typeof fetchStockData>>,
+): SourceResult[] {
+  return [
+    {
+      source: "weather",
+      status: weatherData ? "success" : "failure",
+      count: weatherData ? 1 : 0,
+      error: weatherData ? undefined : "No data",
+    },
+    {
+      source: "stocks",
+      status: stockData.length > 0 ? "success" : "failure",
+      count: stockData.length,
+      error: stockData.length > 0 ? undefined : "No data",
+    },
+  ];
 }
 
 /**

@@ -1,7 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { LogIn } from "lucide-react";
@@ -34,10 +35,22 @@ function formatEditionDate(dateStr: string, editionType: EditionType): string {
 }
 
 /**
+ * Build the home URL that makes App Router refetch the selected edition.
+ * @param editionType - The edition chosen from desktop or mobile tabs.
+ * @returns A root URL with the edition search parameter.
+ * @example
+ * getEditionHref("morning") // => "/?edition=morning"
+ */
+function getEditionHref(editionType: EditionType): `/?edition=${EditionType}` {
+  return `/?edition=${editionType}`;
+}
+
+/**
  * App header with edition tabs, auth controls, and mobile hamburger menu.
  * Client Component — uses Redux for edition state and next-auth/react for session.
  */
 export function Header() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
   const mounted = useSyncExternalStore(
@@ -54,6 +67,15 @@ export function Header() {
     { type: "morning", label: "Morning", icon: "☀️" },
     { type: "evening", label: "Evening", icon: "🌙" },
   ];
+
+  const handleEditionSelect = useCallback(
+    (selectedEditionType: EditionType) => {
+      // Keep the tab responsive while the URL navigation fetches matching data.
+      dispatch(setEditionType(selectedEditionType));
+      router.push(getEditionHref(selectedEditionType));
+    },
+    [dispatch, router],
+  );
 
   return (
     <header className="glass-elevated sticky top-0 z-50">
@@ -83,7 +105,7 @@ export function Header() {
                     ? "text-ms-accent"
                     : "text-ms-text-muted hover:text-ms-text-secondary"
                 }`}
-                onClick={() => dispatch(setEditionType(tab.type))}
+                onClick={() => handleEditionSelect(tab.type)}
               >
                 <span aria-hidden="true">{tab.icon}</span> {tab.label}
                 {/* Active tab underline */}
@@ -215,7 +237,7 @@ export function Header() {
                     : "text-ms-text-muted hover:text-ms-text-secondary"
                 }`}
                 onClick={() => {
-                  dispatch(setEditionType(tab.type));
+                  handleEditionSelect(tab.type);
                   dispatch(setSidebarOpen(false));
                 }}
               >

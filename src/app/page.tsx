@@ -11,6 +11,7 @@ import { getHiddenState } from "@/app/actions/hidden";
 import { HomeContent } from "@/components/home-content";
 import type { HomeContentProps } from "@/components/home-content";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { EditionType } from "@/lib/features/edition-slice";
 
 // ─── Route Segment Config ───────────────────────────────────────────
 
@@ -39,6 +40,7 @@ export const metadata: Metadata = {
 // ─── Helpers ────────────────────────────────────────────────────────
 
 type HiddenState = NonNullable<HomeContentProps["hiddenState"]>;
+type HomeSearchParams = Promise<{ edition?: string | string[] }>;
 
 const EMPTY_HIDDEN_STATE: HiddenState = {
   hiddenArticleIds: [],
@@ -47,12 +49,35 @@ const EMPTY_HIDDEN_STATE: HiddenState = {
 };
 
 /**
- * Determine the default edition type based on the current hour in Asia/Tokyo.
- *
- * Before 12:00 JST → morning, 12:00+ JST → evening.
- * Matches the logic in the cron collector.
+ * Pick the first edition query value so tab navigation can request server data.
+ * @param value - The raw `edition` search parameter from Next.js.
+ * @param fallbackEditionType - The time-based edition used when the URL is absent or invalid.
+ * @returns The requested edition when valid, otherwise the fallback edition.
+ * @example
+ * resolveEditionSearchParam("morning", "evening") // => "morning"
+ * resolveEditionSearchParam("weekly", "evening") // => "evening"
  */
-function getDefaultEditionType(): "morning" | "evening" {
+function resolveEditionSearchParam(
+  value: string | string[] | undefined,
+  fallbackEditionType: EditionType,
+): EditionType {
+  const requestedEditionType = Array.isArray(value) ? value[0] : value;
+  if (
+    requestedEditionType === "morning" ||
+    requestedEditionType === "evening"
+  ) {
+    return requestedEditionType;
+  }
+  return fallbackEditionType;
+}
+
+/**
+ * Determine the default edition type when the home page loads without a tab query.
+ * @returns `morning` before 12:00 JST, otherwise `evening`.
+ * @example
+ * const defaultEditionType = getDefaultEditionType();
+ */
+function getDefaultEditionType(): EditionType {
   const now = new Date();
   const tokyoHour = Number(
     new Intl.DateTimeFormat("en-US", {
@@ -65,7 +90,10 @@ function getDefaultEditionType(): "morning" | "evening" {
 }
 
 /**
- * Get today's date as YYYY-MM-DD in Asia/Tokyo timezone.
+ * Get today's JST date for edition lookup triggered by the home page render.
+ * @returns Date text formatted as `YYYY-MM-DD`.
+ * @example
+ * const today = getTodayJST();
  */
 function getTodayJST(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -77,8 +105,11 @@ function getTodayJST(): string {
 }
 
 /**
- * Convert a Map to a plain Record for serialization across the
- * React Server Component → Client Component boundary.
+ * Convert a Map to a plain object so Server Components can pass grouped articles.
+ * @param map - The source map keyed by string IDs.
+ * @returns A serializable record containing the same entries.
+ * @example
+ * mapToRecord(new Map([["hackernews", []]])) // => { hackernews: [] }
  */
 function mapToRecord<K extends string, V>(map: Map<K, V>): Record<string, V> {
   const record: Record<string, V> = {};
@@ -91,41 +122,41 @@ function mapToRecord<K extends string, V>(map: Map<K, V>): Record<string, V> {
 // ─── Page Component ─────────────────────────────────────────────────
 
 /**
- * MorningStack home page — async Server Component.
- *
- * Fetches the current edition from the database based on time-of-day
- * (morning/evening) and today's date in JST. Falls back to the latest
- * published edition if none exists for today, or shows an empty state
- * message if no editions have been published at all.
- *
- * Widget data (weather, stocks) is fetched from Redis cache populated
- * by the cron collector.
+ * Render the public briefing and honor the edition query when a tab navigates.
+ * @param props - Next.js route props containing async search params.
+ * @returns The home page shell with Suspense-wrapped edition data.
+ * @example
+ * <HomePage searchParams={Promise.resolve({ edition: "morning" })} />
  */
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: HomeSearchParams;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const editionType = resolveEditionSearchParam(
+    resolvedSearchParams.edition,
+    getDefaultEditionType(),
+  );
+
   return (
     <main className="relative mx-auto max-w-[1440px] px-4 py-4 sm:px-6 lg:px-8">
       <Suspense fallback={<HomePageSkeleton />}>
-        <EditionContent />
+        <EditionContent editionType={editionType} />
       </Suspense>
     </main>
   );
 }
 
 /**
- * Async data-fetching component wrapped in Suspense.
- *
- * Separated from the page export so that the Suspense boundary can
- * show a skeleton while the DB and Redis queries resolve.
- */
-/**
  * Fetch all edition data while keeping public news independent from personalization.
+ * @param editionType - The edition selected by URL or by JST default time.
  * @returns Edition data when DB content exists, otherwise `null` for the no-edition state.
  * @example
- * const data = await fetchEditionData();
+ * const data = await fetchEditionData("morning");
  */
-async function fetchEditionData() {
+async function fetchEditionData(editionType: EditionType) {
   try {
-    const editionType = getDefaultEditionType();
     const today = getTodayJST();
 
     const [edition, widgets, bookmarkedIds, hiddenState] = await Promise.all([
@@ -179,8 +210,15 @@ async function getSafeHiddenState(): Promise<HiddenState> {
   }
 }
 
-async function EditionContent() {
-  const data = await fetchEditionData();
+/**
+ * Fetch and render the selected edition inside the page Suspense boundary.
+ * @param props - The edition selected by URL or by default JST timing.
+ * @returns The populated home content or the no-edition fallback.
+ * @example
+ * <EditionContent editionType="evening" />
+ */
+async function EditionContent({ editionType }: { editionType: EditionType }) {
+  const data = await fetchEditionData(editionType);
 
   if (!data) {
     return <NoEditionFallback />;

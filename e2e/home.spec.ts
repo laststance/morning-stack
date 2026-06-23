@@ -1,5 +1,24 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { waitForPageReady, isMobileViewport, openMobileMenu } from "./fixtures";
+
+/**
+ * Click an edition tab in the visible desktop header or mobile menu.
+ * @param page - The Playwright page under test.
+ * @param label - The accessible tab label to select.
+ * @returns A resolved promise after the tab click action completes.
+ * @example
+ * await clickEditionTab(page, /Evening/i);
+ */
+async function clickEditionTab(page: Page, label: RegExp): Promise<void> {
+  if (isMobileViewport(page)) {
+    await openMobileMenu(page);
+    const mobileNav = page.getByLabel("Mobile navigation");
+    await mobileNav.getByRole("tab", { name: label }).click();
+    return;
+  }
+
+  await page.locator("header").getByRole("tab", { name: label }).click();
+}
 
 test.describe("Home Page", () => {
   test.beforeEach(async ({ page }) => {
@@ -19,11 +38,15 @@ test.describe("Home Page", () => {
       // On mobile, tabs are inside hamburger menu
       await openMobileMenu(page);
       const mobileNav = page.getByLabel("Mobile navigation");
-      const tablist = mobileNav.getByRole("tablist", { name: "Edition selector" });
+      const tablist = mobileNav.getByRole("tablist", {
+        name: "Edition selector",
+      });
       await expect(tablist).toBeVisible();
     } else {
       // On desktop, tabs are in the header
-      const tablist = page.getByRole("tablist", { name: "Edition selector" }).first();
+      const tablist = page
+        .getByRole("tablist", { name: "Edition selector" })
+        .first();
       await expect(tablist).toBeVisible();
 
       const morningTab = page.getByRole("tab", { name: /Morning/i }).first();
@@ -36,8 +59,15 @@ test.describe("Home Page", () => {
   test("displays either edition content or no-edition fallback", async ({
     page,
   }) => {
-    const hasContent = await page.getByText("No edition available").isVisible().catch(() => false);
-    const hasSections = await page.locator("h2").first().isVisible().catch(() => false);
+    const hasContent = await page
+      .getByText("No edition available")
+      .isVisible()
+      .catch(() => false);
+    const hasSections = await page
+      .locator("h2")
+      .first()
+      .isVisible()
+      .catch(() => false);
 
     // One of them must be true — the page successfully rendered
     expect(hasContent || hasSections).toBeTruthy();
@@ -72,12 +102,16 @@ test.describe("Edition Tab Switching", () => {
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
       const mobileNav = page.getByLabel("Mobile navigation");
-      const selectedTab = mobileNav.locator('[role="tab"][aria-selected="true"]');
+      const selectedTab = mobileNav.locator(
+        '[role="tab"][aria-selected="true"]',
+      );
       await expect(selectedTab).toBeVisible();
       const tabText = await selectedTab.textContent();
       expect(tabText).toMatch(/Morning|Evening/);
     } else {
-      const selectedTab = page.locator('[role="tab"][aria-selected="true"]').first();
+      const selectedTab = page
+        .locator('[role="tab"][aria-selected="true"]')
+        .first();
       await expect(selectedTab).toBeVisible();
       const tabText = await selectedTab.textContent();
       expect(tabText).toMatch(/Morning|Evening/);
@@ -132,6 +166,25 @@ test.describe("Edition Tab Switching", () => {
     await expect(eveningTabAfter).toHaveAttribute("aria-selected", "false");
   });
 
+  test("clicking edition tabs navigates to edition-specific URL so server data can refresh", async ({
+    page,
+  }) => {
+    // Arrange
+    await expect(page.locator("header")).toBeVisible();
+
+    // Act
+    await clickEditionTab(page, /Evening/i);
+
+    // Assert
+    await expect(page).toHaveURL(/[?&]edition=evening(?:&|$)/);
+
+    // Act
+    await clickEditionTab(page, /Morning/i);
+
+    // Assert
+    await expect(page).toHaveURL(/[?&]edition=morning(?:&|$)/);
+  });
+
   test("edition date updates in header subtitle", async ({ page }) => {
     /**
      * Scope queries to the visible navigation section.
@@ -150,7 +203,10 @@ test.describe("Edition Tab Switching", () => {
     await expect(scope.getByText(/Edition/i).first()).toBeVisible();
 
     // Click evening tab
-    await scope.getByRole("tab", { name: /Evening/i }).first().click();
+    await scope
+      .getByRole("tab", { name: /Evening/i })
+      .first()
+      .click();
 
     // On mobile, tab click closes the menu — need to wait then reopen
     if (isMobileViewport(page)) {
@@ -161,7 +217,10 @@ test.describe("Edition Tab Switching", () => {
     await expect(scope.getByText("Evening Edition").first()).toBeVisible();
 
     // Click morning tab
-    await scope.getByRole("tab", { name: /Morning/i }).first().click();
+    await scope
+      .getByRole("tab", { name: /Morning/i })
+      .first()
+      .click();
 
     if (isMobileViewport(page)) {
       await page.waitForTimeout(300);

@@ -69,6 +69,11 @@ reviews:
         Check that cron endpoints remain idempotent, protected by CRON_SECRET
         when configured, and consistent with UTC Vercel schedules and JST
         MorningStack edition dates.
+    - path: "src/lib/cron/**"
+      instructions: |
+        Check shared cron library code for idempotency, CRON_SECRET protection
+        when configured, reusable failed-draft cleanup, and consistency between
+        UTC Vercel schedules and JST MorningStack edition dates.
     - path: "src/lib/sources/**"
       instructions: |
         Check external source collectors for rate-limit safety, timeout/failure

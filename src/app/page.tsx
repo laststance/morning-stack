@@ -42,6 +42,11 @@ export const metadata: Metadata = {
 type HiddenState = NonNullable<HomeContentProps["hiddenState"]>;
 type HomeSearchParams = Promise<{ edition?: string | string[] }>;
 
+interface ResolvedEditionSelection {
+  editionType: EditionType;
+  isExplicitSelection: boolean;
+}
+
 const EMPTY_HIDDEN_STATE: HiddenState = {
   hiddenArticleIds: [],
   hiddenSources: [],
@@ -52,23 +57,23 @@ const EMPTY_HIDDEN_STATE: HiddenState = {
  * Pick the first edition query value so tab navigation can request server data.
  * @param value - The raw `edition` search parameter from Next.js.
  * @param fallbackEditionType - The time-based edition used when the URL is absent or invalid.
- * @returns The requested edition when valid, otherwise the fallback edition.
+ * @returns The selected edition plus whether the URL explicitly requested it.
  * @example
- * resolveEditionSearchParam("morning", "evening") // => "morning"
- * resolveEditionSearchParam("weekly", "evening") // => "evening"
+ * resolveEditionSearchParam("morning", "evening") // => { editionType: "morning", isExplicitSelection: true }
+ * resolveEditionSearchParam("weekly", "evening") // => { editionType: "evening", isExplicitSelection: false }
  */
 function resolveEditionSearchParam(
   value: string | string[] | undefined,
   fallbackEditionType: EditionType,
-): EditionType {
+): ResolvedEditionSelection {
   const requestedEditionType = Array.isArray(value) ? value[0] : value;
   if (
     requestedEditionType === "morning" ||
     requestedEditionType === "evening"
   ) {
-    return requestedEditionType;
+    return { editionType: requestedEditionType, isExplicitSelection: true };
   }
-  return fallbackEditionType;
+  return { editionType: fallbackEditionType, isExplicitSelection: false };
 }
 
 /**
@@ -84,6 +89,7 @@ function getDefaultEditionType(): EditionType {
       timeZone: "Asia/Tokyo",
       hour: "numeric",
       hour12: false,
+      hourCycle: "h23",
     }).format(now),
   );
   return tokyoHour < 12 ? "morning" : "evening";
@@ -134,7 +140,7 @@ export default async function HomePage({
   searchParams: HomeSearchParams;
 }) {
   const resolvedSearchParams = await searchParams;
-  const editionType = resolveEditionSearchParam(
+  const editionSelection = resolveEditionSearchParam(
     resolvedSearchParams.edition,
     getDefaultEditionType(),
   );
@@ -142,7 +148,10 @@ export default async function HomePage({
   return (
     <main className="relative mx-auto max-w-[1440px] px-4 py-4 sm:px-6 lg:px-8">
       <Suspense fallback={<HomePageSkeleton />}>
-        <EditionContent editionType={editionType} />
+        <EditionContent
+          editionType={editionSelection.editionType}
+          allowLatestFallback={!editionSelection.isExplicitSelection}
+        />
       </Suspense>
     </main>
   );
@@ -151,20 +160,29 @@ export default async function HomePage({
 /**
  * Fetch all edition data while keeping public news independent from personalization.
  * @param editionType - The edition selected by URL or by JST default time.
+ * @param allowLatestFallback - Whether missing same-day content may fall back to the latest published edition.
  * @returns Edition data when DB content exists, otherwise `null` for the no-edition state.
  * @example
- * const data = await fetchEditionData("morning");
+ * const data = await fetchEditionData("morning", false);
  */
-async function fetchEditionData(editionType: EditionType) {
+async function fetchEditionData(
+  editionType: EditionType,
+  allowLatestFallback: boolean,
+) {
   try {
     const today = getTodayJST();
 
-    const [edition, widgets, bookmarkedIds, hiddenState] = await Promise.all([
-      getEdition(editionType, today).then((e) => e ?? getLatestEdition()),
-      getWidgetData(),
-      getSafeBookmarkedIds(),
-      getSafeHiddenState(),
-    ]);
+    const [requestedEdition, widgets, bookmarkedIds, hiddenState] =
+      await Promise.all([
+        getEdition(editionType, today),
+        getWidgetData(),
+        getSafeBookmarkedIds(),
+        getSafeHiddenState(),
+      ]);
+
+    const edition =
+      requestedEdition ??
+      (allowLatestFallback ? await getLatestEdition() : null);
 
     if (!edition) return null;
 
@@ -212,13 +230,19 @@ async function getSafeHiddenState(): Promise<HiddenState> {
 
 /**
  * Fetch and render the selected edition inside the page Suspense boundary.
- * @param props - The edition selected by URL or by default JST timing.
+ * @param props - The edition selection and fallback behavior for this render.
  * @returns The populated home content or the no-edition fallback.
  * @example
- * <EditionContent editionType="evening" />
+ * <EditionContent editionType="evening" allowLatestFallback={false} />
  */
-async function EditionContent({ editionType }: { editionType: EditionType }) {
-  const data = await fetchEditionData(editionType);
+async function EditionContent({
+  editionType,
+  allowLatestFallback,
+}: {
+  editionType: EditionType;
+  allowLatestFallback: boolean;
+}) {
+  const data = await fetchEditionData(editionType, allowLatestFallback);
 
   if (!data) {
     return <NoEditionFallback />;

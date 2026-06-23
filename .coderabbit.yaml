@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  review_details: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 10
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "[skip review]"
+      - "[skip-review]"
+  tools:
+    eslint:
+      enabled: true
+  finishing_touches:
+    docstrings:
+      enabled: false
+    custom:
+      - name: "tighten TypeScript changes"
+        instructions: |
+          In changed TypeScript files, flag newly introduced `any`, unsafe casts,
+          missing exported return types, and duplicated local types when an
+          existing project type can be reused.
+      - name: "protect public-feed resilience"
+        instructions: |
+          Check changed public feed, auth, and personalization code so Auth.js,
+          bookmark, hidden-item, cache, or optional provider failures cannot hide
+          public MorningStack edition content.
+  path_filters:
+    - "!node_modules/**"
+    - "!.next/**"
+    - "!coverage/**"
+    - "!playwright-report/**"
+    - "!test-results/**"
+    - "!pnpm-lock.yaml"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.jpeg"
+    - "!**/*.gif"
+    - "!**/*.webp"
+    - "!**/*.ico"
+    - "!**/*.svg"
+  path_instructions:
+    - path: "src/**/*.ts"
+      instructions: |
+        Review as a strict TypeScript, Next.js App Router, Drizzle, and Auth.js
+        codebase. Prefer existing project helpers and types over new abstractions.
+        Pay special attention to server/client boundaries, database query
+        correctness, timezone handling, graceful degradation for optional APIs,
+        and avoiding secrets in logs or client code.
+    - path: "src/**/*.tsx"
+      instructions: |
+        Review React 19 and Next.js App Router components for hydration safety,
+        accessible controls, stable responsive layouts, and state/data alignment.
+        Flag UI state that changes labels without refetching or updating the
+        underlying server-rendered data.
+    - path: "src/app/api/cron/**"
+      instructions: |
+        Check that cron endpoints remain idempotent, protected by CRON_SECRET
+        when configured, and consistent with UTC Vercel schedules and JST
+        MorningStack edition dates.
+    - path: "src/lib/cron/**"
+      instructions: |
+        Check shared cron library code for idempotency, CRON_SECRET protection
+        when configured, reusable failed-draft cleanup, and consistency between
+        UTC Vercel schedules and JST MorningStack edition dates.
+    - path: "src/lib/sources/**"
+      instructions: |
+        Check external source collectors for rate-limit safety, timeout/failure
+        handling, stable normalization, and empty-result fallbacks so one source
+        cannot break an edition publish.
+    - path: "e2e/**/*.ts"
+      instructions: |
+        Review Playwright tests for observable user behavior, AAA comments, and
+        coverage across desktop/mobile/tablet when the tested UI is responsive.
+        Prefer deterministic assertions over implementation details.
+    - path: "README.md"
+      instructions: |
+        Verify project documentation stays aligned with vercel.json schedules,
+        environment variables, auth providers, data sources, and public routes.
+    - path: "vercel.json"
+      instructions: |
+        Verify cron entries are written in UTC while documentation and product
+        behavior describe MorningStack editions in Asia/Tokyo time.
+
+chat:
+  auto_reply: true

@@ -40,6 +40,16 @@ export const metadata: Metadata = {
   },
   description:
     "A next-generation news aggregation service for tech professionals. Curated news twice daily from HackerNews, GitHub, Reddit, and more.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     siteName: "MorningStack",
     locale: "en_US",
@@ -50,6 +60,14 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Wraps every App Router page with fonts, providers, and telemetry when Next.js renders the root layout.
+ * @param props - Root layout props supplied by Next.js.
+ * @param props.children - The route content rendered inside the shared app shell.
+ * @returns The HTML document shell containing global providers, chrome, and page content.
+ * @example
+ * <RootLayout><main>Briefing</main></RootLayout>
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -72,10 +90,7 @@ export default function RootLayout({
               <TickerWrapper />
               <Header />
               {children}
-              <Toaster
-                theme="system"
-                position="bottom-right"
-              />
+              <Toaster theme="system" position="bottom-right" />
             </SessionProvider>
           </StoreProvider>
         </ThemeProvider>

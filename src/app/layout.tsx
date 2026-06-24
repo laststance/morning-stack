@@ -60,6 +60,14 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Wraps every App Router page with fonts, providers, and telemetry when Next.js renders the root layout.
+ * @param props - Root layout props supplied by Next.js.
+ * @param props.children - The route content rendered inside the shared app shell.
+ * @returns The HTML document shell containing global providers, chrome, and page content.
+ * @example
+ * <RootLayout><main>Briefing</main></RootLayout>
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

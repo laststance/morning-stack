@@ -40,6 +40,16 @@ export const metadata: Metadata = {
   },
   description:
     "A next-generation news aggregation service for tech professionals. Curated news twice daily from HackerNews, GitHub, Reddit, and more.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     siteName: "MorningStack",
     locale: "en_US",
@@ -72,10 +82,7 @@ export default function RootLayout({
               <TickerWrapper />
               <Header />
               {children}
-              <Toaster
-                theme="system"
-                position="bottom-right"
-              />
+              <Toaster theme="system" position="bottom-right" />
             </SessionProvider>
           </StoreProvider>
         </ThemeProvider>

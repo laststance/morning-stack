@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MorningStack">
+  <rect width="512" height="512" rx="92" fill="#f8f1e0" />
+  <path
+    d="M73 132c0-18 15-33 33-33h300c18 0 33 15 33 33v263c0 18-15 33-33 33H106c-18 0-33-15-33-33V132Z"
+    fill="#263a70"
+  />
+  <path
+    d="M91 137c0-16 13-29 29-29h121c16 0 29 13 29 29v250H120c-16 0-29-13-29-29V137Z"
+    fill="#f3dfb8"
+  />
+  <path
+    d="M241 108h151c16 0 29 13 29 29v221c0 16-13 29-29 29H241V108Z"
+    fill="#f4dfb9"
+  />
+  <path
+    d="M91 118c0-18 16-32 34-29l116 22c18 3 31 19 31 38v260c0 9-8 16-17 14l-134-25c-17-3-30-18-30-35V118Z"
+    fill="#fff7e8"
+  />
+  <path
+    d="M421 118c0-18-16-32-34-29l-116 22c-18 3-31 19-31 38v260c0 9 8 16 17 14l134-25c17-3 30-18 30-35V118Z"
+    fill="#fff7e8"
+  />
+  <path d="M256 138v281" stroke="#d4c4a6" stroke-width="8" stroke-linecap="round" />
+  <path
+    d="M184 96c33-43 96-48 135-8"
+    fill="none"
+    stroke="#f36d56"
+    stroke-width="16"
+    stroke-linecap="round"
+  />
+  <path d="M301 55 343 99l-61 12 19-56Z" fill="#f36d56" />
+  <path
+    d="M120 161h98M120 198h117M120 235h68M120 304h96M120 340h122"
+    stroke="#76879f"
+    stroke-width="14"
+    stroke-linecap="round"
+  />
+  <path
+    d="M319 161h78M296 198h84M296 244h118M296 304h103M296 340h72"
+    stroke="#3197a0"
+    stroke-width="14"
+    stroke-linecap="round"
+  />
+  <circle cx="94" cy="161" r="12" fill="#76879f" />
+  <circle cx="94" cy="304" r="12" fill="#76879f" />
+  <circle cx="276" cy="161" r="12" fill="#3197a0" />
+  <circle cx="276" cy="304" r="12" fill="#3197a0" />
+  <path d="M314 375h54v88l-27-21-27 21v-88Z" fill="#2d95a2" />
+</svg>

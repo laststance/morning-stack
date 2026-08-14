@@ -130,8 +130,10 @@ interface HeroMainCardProps {
 }
 
 /**
- * Large featured card for the primary hero article.
- * Shows a thumbnail when available, otherwise a text-first featured treatment.
+ * Renders the primary featured article with touch-visible actions and a compact desktop hover treatment.
+ * @returns The large hero card for the highest-scoring article.
+ * @example
+ * <HeroMainCard article={article} onBookmark={handleBookmark} />
  */
 function HeroMainCard({
   article,
@@ -270,11 +272,12 @@ function HeroMainCard({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Touch layouts keep actions visible; desktop reveals the compact row on hover or focus. */}
       <div
         className={cn(
-          "absolute top-3 right-3 flex gap-1",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "relative z-10 ml-auto flex w-fit gap-1 px-5 pb-5",
+          "opacity-100 transition-opacity lg:absolute lg:top-3 lg:right-3 lg:p-0 lg:opacity-0",
+          "lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
@@ -285,7 +288,7 @@ function HeroMainCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
@@ -318,7 +321,7 @@ function HeroMainCard({
               disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label={

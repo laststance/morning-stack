@@ -47,7 +47,7 @@ export function HomeWarnings({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
               disabled={navigation?.isPending}
               onClick={() => navigation?.retry("retry-dates")}
             >
@@ -70,7 +70,7 @@ export function HomeWarnings({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
               disabled={navigation?.isPending}
               onClick={() => navigation?.retry("retry-preferences")}
             >
@@ -128,6 +128,7 @@ export function MissingEditionState({
         {!isAtLowerBound && (
           <Button
             type="button"
+            size="lg"
             disabled={navigation?.isPending}
             onClick={() =>
               navigation?.navigate({ control: "previous", date: previousDate })
@@ -142,6 +143,7 @@ export function MissingEditionState({
         )}
         <Button
           type="button"
+          size="lg"
           variant={isAtLowerBound ? "default" : "outline"}
           disabled={navigation?.isPending}
           onClick={() => navigation?.navigate({ control: "today", date: null })}
@@ -177,6 +179,7 @@ export function UnavailableEditionState() {
       <EmptyContent className="flex-row justify-center">
         <Button
           type="button"
+          size="lg"
           disabled={navigation?.isPending}
           onClick={() => navigation?.retry("retry-content")}
         >
@@ -188,6 +191,7 @@ export function UnavailableEditionState() {
         </Button>
         <Button
           type="button"
+          size="lg"
           variant="outline"
           disabled={navigation?.isPending}
           onClick={() => navigation?.navigate({ control: "today", date: null })}

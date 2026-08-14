@@ -123,6 +123,7 @@ export default async function HomePage({
         />
         <EditionDateNavigator
           requestedDate={selection.requestedDate}
+          requestedEditionType={selection.requestedEditionType}
           today={today}
           earliestPublishedDate={earliestPublishedDate}
         />

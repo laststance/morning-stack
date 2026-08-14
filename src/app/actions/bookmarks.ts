@@ -40,7 +40,7 @@ export async function addBookmark(
 /**
  * Removes a bookmark for the exact persisted article when an authenticated feed or bookmark action triggers.
  * @param articleId - Postgres primary key of the displayed article row.
- * @returns Success when deletion is complete/idempotent, otherwise an authentication error.
+ * @returns Success when deletion is complete/idempotent, otherwise an authentication/persistence error.
  * @example
  * await removeBookmark("10000000-0000-4000-8000-000000000001")
  */
@@ -52,14 +52,19 @@ export async function removeBookmark(
     return { success: false, error: "Not authenticated" };
   }
 
-  await db
-    .delete(bookmarks)
-    .where(
-      and(
-        eq(bookmarks.userId, session.user.id),
-        eq(bookmarks.articleId, articleId),
-      ),
-    );
+  try {
+    await db
+      .delete(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.userId, session.user.id),
+          eq(bookmarks.articleId, articleId),
+        ),
+      );
+  } catch (error) {
+    console.error("[Bookmarks] Failed to remove persisted article:", error);
+    return { success: false, error: "Failed to remove bookmark" };
+  }
 
   return { success: true };
 }

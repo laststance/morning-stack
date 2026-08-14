@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 /**
  * Settings page — Account info, Hidden Items management, Display Preferences.
  *
- * Protected by auth middleware in `src/middleware.ts` — unauthenticated
+ * Protected by the auth boundary in `src/proxy.ts` — unauthenticated
  * users are redirected to /login before this page renders.
  */
 export default async function SettingsPage() {

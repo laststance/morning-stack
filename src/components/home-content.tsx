@@ -166,9 +166,6 @@ export function HomeContent(props: HomeContentProps) {
   const bookmarkedIdsArray = useAppSelector(
     (state) => state.bookmarks.bookmarkedIds,
   );
-  const bookmarksInitialized = useAppSelector(
-    (state) => state.bookmarks.initialized,
-  );
 
   // ── Hidden state ──
   const hiddenArticleIdsArray = useAppSelector(
@@ -180,38 +177,36 @@ export function HomeContent(props: HomeContentProps) {
   const hiddenTopicsArray = useAppSelector(
     (state) => state.hidden.hiddenTopics,
   );
-  const hiddenInitialized = useAppSelector((state) => state.hidden.initialized);
+  const isPersonalizationAvailable = props.personalizationStatus === "available";
 
-  // Initialize bookmarks from server data on first render
+  // Re-sync after navigation/retry so the persistent Root Layout store cannot retain an older server snapshot.
   useEffect(() => {
-    if (!bookmarksInitialized) {
-      dispatch(initializeBookmarks(initialBookmarkedIds));
-    }
-  }, [dispatch, bookmarksInitialized, initialBookmarkedIds]);
+    if (!isPersonalizationAvailable) return;
+    dispatch(initializeBookmarks(initialBookmarkedIds));
+  }, [dispatch, initialBookmarkedIds, isPersonalizationAvailable]);
 
-  // Initialize hidden state from server data on first render
+  // Apply the same refresh rule to hidden filters once their server snapshot is known.
   useEffect(() => {
-    if (!hiddenInitialized && initialHiddenState) {
-      dispatch(initializeHidden(initialHiddenState));
-    }
-  }, [dispatch, hiddenInitialized, initialHiddenState]);
+    if (!isPersonalizationAvailable || !initialHiddenState) return;
+    dispatch(initializeHidden(initialHiddenState));
+  }, [dispatch, initialHiddenState, isPersonalizationAvailable]);
 
   // Convert arrays to Sets for O(1) lookup in child components
   const bookmarkedIdsSet = useMemo(
-    () => new Set(bookmarkedIdsArray),
-    [bookmarkedIdsArray],
+    () => new Set(isPersonalizationAvailable ? bookmarkedIdsArray : []),
+    [bookmarkedIdsArray, isPersonalizationAvailable],
   );
   const hiddenArticleIdsSet = useMemo(
-    () => new Set(hiddenArticleIdsArray),
-    [hiddenArticleIdsArray],
+    () => new Set(isPersonalizationAvailable ? hiddenArticleIdsArray : []),
+    [hiddenArticleIdsArray, isPersonalizationAvailable],
   );
   const hiddenSourcesSet = useMemo(
-    () => new Set(hiddenSourcesArray),
-    [hiddenSourcesArray],
+    () => new Set(isPersonalizationAvailable ? hiddenSourcesArray : []),
+    [hiddenSourcesArray, isPersonalizationAvailable],
   );
   const hiddenTopicsSet = useMemo(
-    () => new Set(hiddenTopicsArray),
-    [hiddenTopicsArray],
+    () => new Set(isPersonalizationAvailable ? hiddenTopicsArray : []),
+    [hiddenTopicsArray, isPersonalizationAvailable],
   );
 
   // Apply client-side hidden filtering
@@ -333,9 +328,9 @@ export function HomeContent(props: HomeContentProps) {
     [isSignedIn, router, dispatch],
   );
   const bookmarkAction =
-    props.personalizationStatus === "available" ? handleBookmark : undefined;
+    isPersonalizationAvailable ? handleBookmark : undefined;
   const hideAction =
-    props.personalizationStatus === "available" ? handleHide : undefined;
+    isPersonalizationAvailable ? handleHide : undefined;
 
   return (
     <div className="flex flex-col gap-6">

@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
+import type { EditionType } from "@/lib/db/schema";
 import { addDaysToCivilDate } from "@/lib/edition-date/add-days-to-civil-date";
 import { calendarDateToCivilDate } from "@/lib/edition-date/calendar-date-to-civil-date";
 import { civilDateToCalendarDate } from "@/lib/edition-date/civil-date-to-calendar-date";
@@ -27,14 +28,16 @@ import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
  * @param props - Requested date, today's JST date, and independent archive-bound result.
  * @returns Accessible centered Date Rail with current/historical context and native disabled boundaries.
  * @example
- * <EditionDateNavigator requestedDate="2030-01-14" today="2030-01-15" earliestPublishedDate="2030-01-12" />
+ * <EditionDateNavigator requestedDate="2030-01-14" requestedEditionType="morning" today="2030-01-15" earliestPublishedDate="2030-01-12" />
  */
 export function EditionDateNavigator({
   requestedDate,
+  requestedEditionType,
   today,
   earliestPublishedDate,
 }: {
   requestedDate: string;
+  requestedEditionType: EditionType;
   today: string;
   earliestPublishedDate: string | null;
 }) {
@@ -74,6 +77,7 @@ export function EditionDateNavigator({
   return (
     <nav
       aria-label="Edition date"
+      aria-busy={navigation?.isPending}
       className="border-ms-border/60 border-b px-4 py-3 sm:px-6"
     >
       <div className="mx-auto grid w-full max-w-md grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
@@ -94,14 +98,18 @@ export function EditionDateNavigator({
           )}
         </Button>
 
-        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <Popover
+          modal
+          open={isCalendarOpen}
+          onOpenChange={setIsCalendarOpen}
+        >
           <PopoverTrigger asChild>
             <Button
               type="button"
               variant="outline"
               disabled={isDatePickerDisabled}
               className="data-[state=open]:border-ms-accent h-auto min-h-11 min-w-0 justify-center px-2 py-1.5"
-              aria-label={`Choose edition date, currently ${formatEditionDate(requestedDate)}`}
+              aria-label={`Choose edition date for ${requestedEditionType}, currently ${formatEditionDate(requestedDate)}`}
             >
               {navigation?.isPending && navigation.activeControl === "date" ? (
                 <Spinner

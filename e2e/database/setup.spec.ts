@@ -3,6 +3,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import postgres, { type Sql } from "postgres";
 
+import { db } from "@/lib/db";
+import { tryAcquireEditionCollectionLock } from "@/lib/cron/try-acquire-edition-collection-lock";
+
 const EXPECTED_DATABASE_NAME = "morning_stack_e2e";
 const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost"]);
 const MIGRATION_BREAKPOINT = "--> statement-breakpoint";
@@ -26,6 +29,8 @@ test("database setup produces one deterministic archive and one claim per editio
       claimEdition(sql, "2030-01-20"),
       claimEdition(sql, "2030-01-20"),
     ]);
+    const existingDraftCollectorClaims =
+      await claimExistingDraftCollectionLockConcurrently();
     const repeatedExternalIdArticles = await sql<
       Array<{ id: string; editionDate: string }>
     >`
@@ -38,6 +43,7 @@ test("database setup produces one deterministic archive and one claim per editio
 
     // Assert
     expect(concurrentClaims.flat()).toHaveLength(1);
+    expect(existingDraftCollectorClaims).toEqual([true, false]);
     expect(repeatedExternalIdArticles).toEqual([
       {
         id: "20000000-0000-4000-8000-000000000001",
@@ -231,4 +237,49 @@ async function claimEdition(
     on conflict (type, date) do nothing
     returning id
   `;
+}
+
+/**
+ * Runs two collector transactions against one existing draft so the production lock proves only one writer can clear/publish it.
+ * @returns First/second lock outcomes while their transactions overlap.
+ * @example
+ * await claimExistingDraftCollectionLockConcurrently() // => [true, false]
+ */
+async function claimExistingDraftCollectionLockConcurrently(): Promise<
+  boolean[]
+> {
+  let releaseFirstCollector = (): void => undefined;
+  let announceFirstLock = (): void => undefined;
+  const firstLockAcquired = new Promise<void>((resolve) => {
+    announceFirstLock = resolve;
+  });
+  const firstCollectorCanFinish = new Promise<void>((resolve) => {
+    releaseFirstCollector = resolve;
+  });
+  const firstClaim = db.transaction(async (transaction) => {
+    const hasLock = await tryAcquireEditionCollectionLock(
+      transaction,
+      "morning",
+      "2030-01-20",
+    );
+    announceFirstLock();
+    await firstCollectorCanFinish;
+    return hasLock;
+  });
+
+  await firstLockAcquired;
+  let secondClaim = false;
+  try {
+    secondClaim = await db.transaction((transaction) =>
+      tryAcquireEditionCollectionLock(
+        transaction,
+        "morning",
+        "2030-01-20",
+      ),
+    );
+  } finally {
+    releaseFirstCollector();
+  }
+
+  return [await firstClaim, secondClaim];
 }

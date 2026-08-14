@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Article } from "@/types/article";
+import type { PersistedArticle } from "@/types/article";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
   initializeBookmarks,
@@ -14,7 +14,7 @@ import { ArticleCard } from "@/components/cards/article-card";
 
 export interface BookmarksContentProps {
   /** Bookmarked articles sorted by most recently saved. */
-  articles: Article[];
+  articles: PersistedArticle[];
 }
 
 /**
@@ -38,7 +38,7 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
   // Initialize bookmarks from the articles on this page
   useEffect(() => {
     if (!initialized) {
-      dispatch(initializeBookmarks(articles.map((a) => a.externalId)));
+      dispatch(initializeBookmarks(articles.map((article) => article.id)));
     }
   }, [dispatch, initialized, articles]);
 
@@ -49,20 +49,20 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
 
   /** Handle un-bookmark with optimistic removal. */
   const handleBookmark = useCallback(
-    async (article: Article) => {
+    async (article: PersistedArticle) => {
       // On the bookmarks page, clicking always removes
-      dispatch(toggleBookmark(article.externalId));
-      setRemovedIds((prev) => new Set(prev).add(article.externalId));
+      dispatch(toggleBookmark(article.id));
+      setRemovedIds((previousIds) => new Set(previousIds).add(article.id));
 
-      const result = await removeBookmark(article.externalId);
+      const result = await removeBookmark(article.id);
 
       if (!result.success) {
         // Revert on failure
-        dispatch(revertBookmark(article.externalId));
-        setRemovedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(article.externalId);
-          return next;
+        dispatch(revertBookmark(article.id));
+        setRemovedIds((previousRemovedIds) => {
+          const restoredRemovedIds = new Set(previousRemovedIds);
+          restoredRemovedIds.delete(article.id);
+          return restoredRemovedIds;
         });
       } else {
         // Refresh the page data from server after successful removal
@@ -74,17 +74,17 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
 
   // Filter out optimistically removed articles
   const visibleArticles = articles.filter(
-    (a) => !removedIds.has(a.externalId),
+    (article) => !removedIds.has(article.id),
   );
 
   if (visibleArticles.length === 0) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="text-center">
-          <p className="text-lg font-medium text-ms-text-primary">
+          <p className="text-ms-text-primary text-lg font-medium">
             No bookmarks yet
           </p>
-          <p className="mt-1 text-sm text-ms-text-muted">
+          <p className="text-ms-text-muted mt-1 text-sm">
             Click the star icon on any article to save it here.
           </p>
         </div>
@@ -96,10 +96,10 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {visibleArticles.map((article) => (
         <ArticleCard
-          key={article.externalId}
+          key={article.id}
           article={article}
           onBookmark={handleBookmark}
-          isBookmarked={bookmarkedIdsSet.has(article.externalId)}
+          isBookmarked={bookmarkedIdsSet.has(article.id)}
         />
       ))}
     </div>

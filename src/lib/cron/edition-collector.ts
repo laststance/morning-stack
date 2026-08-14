@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { editions, articles } from "@/lib/db/schema";
+import { editions, articles, type EditionType } from "@/lib/db/schema";
 import type { Article, ArticleSource } from "@/types/article";
 import { fetchHackerNewsArticles } from "@/lib/sources/hackernews";
 import { fetchGitHubArticles } from "@/lib/sources/github";
@@ -17,9 +17,6 @@ import { fetchWeather } from "@/lib/sources/weather";
 import { fetchStockData } from "@/lib/sources/stocks";
 import { saveWidgetSnapshots } from "@/lib/widget-snapshots";
 
-/** Edition type produced by the twice-daily collector. */
-export type EditionType = "morning" | "evening";
-
 /** Result of fetching from a single source. */
 interface SourceResult {
   source: string;
@@ -32,6 +29,11 @@ interface SourceResult {
 interface CollectRequestOptions {
   editionType?: EditionType;
 }
+
+/** Unique edition-row claim that prevents simultaneous collectors from writing the same date/type. */
+type WritableEditionClaim =
+  | { status: "writable"; id: string }
+  | { status: "conflict"; id: string };
 
 /** Maximum articles to keep per source in the edition. */
 const TOP_N_PER_SOURCE: Record<ArticleSource, number> = {
@@ -126,10 +128,23 @@ export async function handleCollectRequest(
       });
     }
 
-    const edition = await getWritableDraftEdition(existingEdition, {
+    const editionClaim = await getWritableDraftEdition(existingEdition, {
       editionType,
       today,
     });
+
+    // A simultaneous collector owns the unique date/type row, so this run must not clear or duplicate its articles.
+    if (editionClaim.status === "conflict") {
+      return NextResponse.json({
+        status: "skipped",
+        reason: "Edition collection already claimed",
+        editionId: editionClaim.id,
+        editionType,
+        date: today,
+      });
+    }
+
+    const edition = { id: editionClaim.id };
 
     const {
       allArticles,
@@ -232,33 +247,50 @@ async function findExistingEdition(editionType: EditionType, today: string) {
  * Reuse an unpublished edition or create a fresh draft before source fetches.
  * @param existingEdition - Existing row for the target date, usually a stale draft.
  * @param input - Edition type and date used when creating a new draft.
- * @returns Writable draft edition ID.
+ * @returns Writable ownership for this run, or a conflict claim owned by a simultaneous collector.
  * @example
  * const draft = await getWritableDraftEdition(existing, { editionType, today });
  */
 async function getWritableDraftEdition(
   existingEdition: { id: string; status: "draft" | "published" } | null,
   input: { editionType: EditionType; today: string },
-) {
+): Promise<WritableEditionClaim> {
   if (existingEdition) {
     // A previous failed run may have left partial articles attached to a draft.
     await db.delete(articles).where(eq(articles.editionId, existingEdition.id));
     console.log(`[Cron] Reusing draft edition: ${existingEdition.id}`);
-    return { id: existingEdition.id };
+    return { status: "writable", id: existingEdition.id };
   }
 
-  const [edition] = await db
+  const insertedEditions = await db
     .insert(editions)
     .values({
       type: input.editionType,
       date: input.today,
       status: "draft",
     })
+    .onConflictDoNothing({ target: [editions.type, editions.date] })
     .returning({ id: editions.id });
+  const insertedEdition = insertedEditions[0];
 
-  console.log(`[Cron] Created draft edition: ${edition.id}`);
+  if (insertedEdition) {
+    console.log(`[Cron] Created draft edition: ${insertedEdition.id}`);
+    return { status: "writable", id: insertedEdition.id };
+  }
 
-  return edition;
+  // Reload the winner after a unique conflict and skip without touching its draft/articles.
+  const conflictingEdition = await findExistingEdition(
+    input.editionType,
+    input.today,
+  );
+  if (!conflictingEdition) {
+    throw new Error("Edition conflict occurred but no winning row was found");
+  }
+
+  console.log(
+    `[Cron] Concurrent edition claim detected: ${conflictingEdition.id}`,
+  );
+  return { status: "conflict", id: conflictingEdition.id };
 }
 
 /**

@@ -2,11 +2,21 @@
 
 import Image from "next/image";
 import { useCallback, useState } from "react";
-import { Star, X, Play, Heart, Repeat2, Eye, EyeOff, Ban, Tag } from "lucide-react";
+import {
+  Star,
+  X,
+  Play,
+  Heart,
+  Repeat2,
+  Eye,
+  EyeOff,
+  Ban,
+  Tag,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
-import type { Article, HideAction } from "@/types/article";
+import type { PersistedArticle, HideAction } from "@/types/article";
 import { SOURCE_LABELS } from "@/components/cards/article-card";
 import { ShareMenu } from "@/components/cards/share-menu";
 import {
@@ -20,14 +30,14 @@ import {
 
 export interface SnsSectionProps {
   /** Bluesky posts to display (up to 3). */
-  blueskyArticles: Article[];
+  blueskyArticles: PersistedArticle[];
   /** YouTube videos to display (up to 3). */
-  youtubeArticles: Article[];
+  youtubeArticles: PersistedArticle[];
   /** Called when the user clicks the bookmark button. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option from the dropdown. */
   onHide?: (action: HideAction) => void;
-  /** Set of bookmarked article external IDs. */
+  /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
 }
 
@@ -50,15 +60,17 @@ function formatCount(n: number): string {
  */
 function extractKeyword(title: string): string {
   const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find((w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w));
+  const capitalized = words.find(
+    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
+  );
   return capitalized ?? words[0] ?? title.slice(0, 20);
 }
 
 // ─── YouTube Card ───────────────────────────────────────────────────
 
 interface YouTubeCardProps {
-  article: Article;
-  onBookmark?: (article: Article) => void;
+  article: PersistedArticle;
+  onBookmark?: (article: PersistedArticle) => void;
   onHide?: (action: HideAction) => void;
   isBookmarked?: boolean;
 }
@@ -82,10 +94,10 @@ function YouTubeCard({
     <article
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-md",
-        "border border-ms-border/50 bg-ms-bg-secondary",
+        "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
-        "focus-within:ring-2 focus-within:ring-ms-accent/50",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
     >
       {/* Thumbnail with play overlay */}
@@ -93,7 +105,7 @@ function YouTubeCard({
         href={article.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative block aspect-video w-full overflow-hidden bg-ms-bg-tertiary"
+        className="bg-ms-bg-tertiary relative block aspect-video w-full overflow-hidden"
         aria-label={`Watch: ${article.title}`}
       >
         {article.thumbnailUrl && !imgError ? (
@@ -106,7 +118,7 @@ function YouTubeCard({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-ms-text-muted">
+          <div className="text-ms-text-muted flex h-full items-center justify-center">
             <Play className="size-10" />
           </div>
         )}
@@ -126,7 +138,7 @@ function YouTubeCard({
 
         {/* Duration badge */}
         {duration && (
-          <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
+          <span className="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
             {duration}
           </span>
         )}
@@ -140,18 +152,19 @@ function YouTubeCard({
 
       {/* Content */}
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ms-text-primary">
+        <h3 className="text-ms-text-primary line-clamp-2 text-sm leading-snug font-medium">
           <a
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
+            data-article-headline
             className="outline-none after:absolute after:inset-0 focus-visible:underline"
           >
             {article.title}
           </a>
         </h3>
 
-        <div className="mt-auto flex items-center gap-2 text-xs text-ms-text-muted">
+        <div className="text-ms-text-muted mt-auto flex items-center gap-2 text-xs">
           <span
             className={cn(
               "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
@@ -190,8 +203,8 @@ function YouTubeCard({
 // ─── Bluesky Card ───────────────────────────────────────────────────
 
 interface BlueskyCardProps {
-  article: Article;
-  onBookmark?: (article: Article) => void;
+  article: PersistedArticle;
+  onBookmark?: (article: PersistedArticle) => void;
   onHide?: (action: HideAction) => void;
   isBookmarked?: boolean;
 }
@@ -215,10 +228,10 @@ function BlueskyCard({
     <article
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-md",
-        "border border-ms-border/50 bg-ms-bg-secondary",
+        "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg hover:border-ms-border",
-        "focus-within:ring-2 focus-within:ring-ms-accent/50",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
     >
       {/* Source brand bar (top) */}
@@ -243,10 +256,10 @@ function BlueskyCard({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-ms-text-primary">
+            <p className="text-ms-text-primary truncate text-sm font-medium">
               {displayName}
             </p>
-            <p className="truncate text-xs text-ms-text-muted">@{author}</p>
+            <p className="text-ms-text-muted truncate text-xs">@{author}</p>
           </div>
           <span
             className={cn(
@@ -263,15 +276,16 @@ function BlueskyCard({
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
+          data-article-headline
           className="outline-none after:absolute after:inset-0 focus-visible:underline"
         >
-          <p className="line-clamp-3 text-sm leading-relaxed text-ms-text-primary">
+          <p className="text-ms-text-primary line-clamp-3 text-sm leading-relaxed">
             {article.excerpt ?? article.title}
           </p>
         </a>
 
         {/* Engagement row */}
-        <div className="mt-auto flex items-center gap-4 text-xs text-ms-text-muted">
+        <div className="text-ms-text-muted mt-auto flex items-center gap-4 text-xs">
           <span className="inline-flex items-center gap-1">
             <Heart className="size-3.5" aria-hidden="true" />
             {formatCount(likes)}
@@ -297,9 +311,9 @@ function BlueskyCard({
 // ─── Shared action buttons ──────────────────────────────────────────
 
 interface ActionButtonsProps {
-  article: Article;
+  article: PersistedArticle;
   isBookmarked: boolean;
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   onHide?: (action: HideAction) => void;
 }
 
@@ -325,24 +339,34 @@ function ActionButtons({
   return (
     <div
       className={cn(
-        "absolute right-2 top-2 flex gap-1",
-        "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+        "absolute top-2 right-2 flex gap-1",
+        "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
       )}
     >
       <button
         type="button"
+        disabled={!onBookmark}
         onClick={(e) => {
           e.stopPropagation();
           onBookmark?.(article);
         }}
         className={cn(
-          "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+          "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
           "hover:bg-ms-accent/90 hover:text-white",
           isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
         )}
-        aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+        aria-label={
+          !onBookmark
+            ? "Bookmark status unavailable"
+            : isBookmarked
+              ? "Remove bookmark"
+              : "Bookmark"
+        }
       >
-        <Star className="size-3.5" fill={isBookmarked ? "currentColor" : "none"} />
+        <Star
+          className="size-3.5"
+          fill={isBookmarked ? "currentColor" : "none"}
+        />
       </button>
 
       <ShareMenu
@@ -358,28 +382,29 @@ function ActionButtons({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
+            disabled={!onHide}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+              "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
               "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
             )}
-            aria-label="Hide options"
+            aria-label={
+              onHide ? "Hide options" : "Hidden preferences unavailable"
+            }
           >
             <X className="size-3.5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-56 bg-ms-bg-secondary border-ms-border"
+          className="bg-ms-bg-secondary border-ms-border w-56"
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenuItem
-            onClick={() =>
-              onHide?.({ type: "article", targetId: article.externalId })
-            }
+            onClick={() => onHide?.({ type: "article", targetId: article.id })}
             className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
           >
-            <EyeOff className="size-4 text-ms-text-muted" />
+            <EyeOff className="text-ms-text-muted size-4" />
             Hide this article
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -388,16 +413,14 @@ function ActionButtons({
             }
             className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
           >
-            <Ban className="size-4 text-ms-text-muted" />
+            <Ban className="text-ms-text-muted size-4" />
             Hide from {sourceLabel}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() =>
-              onHide?.({ type: "topic", targetId: keyword })
-            }
+            onClick={() => onHide?.({ type: "topic", targetId: keyword })}
             className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
           >
-            <Tag className="size-4 text-ms-text-muted" />
+            <Tag className="text-ms-text-muted size-4" />
             Hide topic: {keyword}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -434,14 +457,14 @@ export function SnsSection({
         {hasBluesky && (
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🦋" title="Bluesky" />
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none sm:flex-col sm:overflow-x-visible sm:pb-0">
+            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
               {blueskyArticles.slice(0, 3).map((article) => (
-                <div key={article.externalId} className="w-[72vw] shrink-0 sm:w-auto">
+                <div key={article.id} className="w-[72vw] shrink-0 sm:w-auto">
                   <BlueskyCard
                     article={article}
                     onBookmark={onBookmark}
                     onHide={onHide}
-                    isBookmarked={bookmarkedIds.has(article.externalId)}
+                    isBookmarked={bookmarkedIds.has(article.id)}
                   />
                 </div>
               ))}
@@ -453,14 +476,14 @@ export function SnsSection({
         {hasYoutube && (
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🎬" title="YouTube" />
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none sm:flex-col sm:overflow-x-visible sm:pb-0">
+            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
               {youtubeArticles.slice(0, 3).map((article) => (
-                <div key={article.externalId} className="w-[72vw] shrink-0 sm:w-auto">
+                <div key={article.id} className="w-[72vw] shrink-0 sm:w-auto">
                   <YouTubeCard
                     article={article}
                     onBookmark={onBookmark}
                     onHide={onHide}
-                    isBookmarked={bookmarkedIds.has(article.externalId)}
+                    isBookmarked={bookmarkedIds.has(article.id)}
                   />
                 </div>
               ))}

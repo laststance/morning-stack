@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { EditionType } from "@/lib/db/schema";
 
-/** Edition type matching the database enum in schema.ts */
-export type EditionType = "morning" | "evening";
+export type { EditionType } from "@/lib/db/schema";
 
 interface EditionState {
   /** Current edition type (morning or evening) */

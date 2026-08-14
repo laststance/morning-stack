@@ -1,13 +1,21 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Star, X, MessageSquare, ArrowBigUp, EyeOff, Ban, Tag } from "lucide-react";
+import {
+  Star,
+  X,
+  MessageSquare,
+  ArrowBigUp,
+  EyeOff,
+  Ban,
+  Tag,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
 import { SOURCE_LABELS } from "@/components/cards/article-card";
 import { ShareMenu } from "@/components/cards/share-menu";
-import type { Article, HideAction } from "@/types/article";
+import type { PersistedArticle, HideAction } from "@/types/article";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,9 +48,7 @@ function formatScore(score: number): string {
 function extractKeyword(title: string): string {
   const words = title.split(/\s+/).filter((w) => w.length >= 3);
   const capitalized = words.find(
-    (w) =>
-      /^[A-Z]/.test(w) &&
-      !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
+    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
   );
   return capitalized ?? words[0] ?? title.slice(0, 20);
 }
@@ -70,11 +76,11 @@ function extractDomain(url: string): string | undefined {
 
 interface HNListItemProps {
   /** The HN article data. */
-  article: Article;
+  article: PersistedArticle;
   /** 1-based ranking position in the list. */
   rank: number;
   /** Called when the user clicks the bookmark button. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option from the dropdown. */
   onHide?: (action: HideAction) => void;
   /** Whether this article is currently bookmarked. */
@@ -124,7 +130,7 @@ function HNListItem({
     >
       {/* Rank number */}
       <span
-        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold text-ms-text-muted"
+        className="text-ms-text-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold"
         aria-label={`Rank ${rank}`}
       >
         {rank}
@@ -133,27 +139,28 @@ function HNListItem({
       {/* Content column */}
       <div className="min-w-0 flex-1">
         {/* Title row */}
-        <h3 className="text-sm font-medium leading-snug text-ms-text-primary">
+        <h3 className="text-ms-text-primary text-sm leading-snug font-medium">
           <a
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
+            data-article-headline
             className="outline-none after:absolute after:inset-0 focus-visible:underline"
           >
             {article.title}
           </a>
           {domain && (
-            <span className="ml-1.5 text-xs font-normal text-ms-text-muted">
+            <span className="text-ms-text-muted ml-1.5 text-xs font-normal">
               ({domain})
             </span>
           )}
         </h3>
 
         {/* Meta row: points + comments + author */}
-        <div className="mt-1 flex items-center gap-3 text-xs text-ms-text-muted">
+        <div className="text-ms-text-muted mt-1 flex items-center gap-3 text-xs">
           {/* Points */}
           <span
-            className="inline-flex items-center gap-1 font-mono tabular-nums text-orange-500"
+            className="inline-flex items-center gap-1 font-mono text-orange-500 tabular-nums"
             title={`${article.score} points`}
           >
             <ArrowBigUp className="size-3.5" aria-hidden="true" />
@@ -165,7 +172,7 @@ function HNListItem({
             href={`https://news.ycombinator.com/item?id=${article.externalId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative z-10 inline-flex items-center gap-1 transition-colors hover:text-ms-text-secondary"
+            className="hover:text-ms-text-secondary relative z-10 inline-flex items-center gap-1 transition-colors"
             title={`${comments} comments`}
           >
             <MessageSquare className="size-3" aria-hidden="true" />
@@ -185,22 +192,29 @@ function HNListItem({
       {/* Hover action buttons */}
       <div
         className={cn(
-          "absolute right-2 top-2 flex gap-1",
-          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+          "absolute top-2 right-2 flex gap-1",
+          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
         )}
       >
         <button
           type="button"
+          disabled={!onBookmark}
           onClick={(e) => {
             e.stopPropagation();
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+            "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+          aria-label={
+            !onBookmark
+              ? "Bookmark status unavailable"
+              : isBookmarked
+                ? "Remove bookmark"
+                : "Bookmark"
+          }
         >
           <Star
             className="size-3.5"
@@ -221,28 +235,31 @@ function HNListItem({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+                "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
-              aria-label="Hide options"
+              aria-label={
+                onHide ? "Hide options" : "Hidden preferences unavailable"
+              }
             >
               <X className="size-3.5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 bg-ms-bg-secondary border-ms-border"
+            className="bg-ms-bg-secondary border-ms-border w-56"
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenuItem
               onClick={() =>
-                onHide?.({ type: "article", targetId: article.externalId })
+                onHide?.({ type: "article", targetId: article.id })
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <EyeOff className="size-4 text-ms-text-muted" />
+              <EyeOff className="text-ms-text-muted size-4" />
               Hide this article
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -251,16 +268,14 @@ function HNListItem({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Ban className="size-4 text-ms-text-muted" />
+              <Ban className="text-ms-text-muted size-4" />
               Hide from {sourceLabel}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "topic", targetId: keyword })
-              }
+              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Tag className="size-4 text-ms-text-muted" />
+              <Tag className="text-ms-text-muted size-4" />
               Hide topic: {keyword}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -274,12 +289,12 @@ function HNListItem({
 
 export interface HackerNewsSectionProps {
   /** Hacker News articles to display. */
-  articles: Article[];
+  articles: PersistedArticle[];
   /** Called when the user clicks the bookmark button. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option. */
   onHide?: (action: HideAction) => void;
-  /** Set of bookmarked article external IDs. */
+  /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
 }
 
@@ -308,12 +323,12 @@ export function HackerNewsSection({
       <div className="flex flex-col gap-0.5">
         {articles.slice(0, 5).map((article, index) => (
           <HNListItem
-            key={article.externalId}
+            key={article.id}
             article={article}
             rank={index + 1}
             onBookmark={onBookmark}
             onHide={onHide}
-            isBookmarked={bookmarkedIds.has(article.externalId)}
+            isBookmarked={bookmarkedIds.has(article.id)}
           />
         ))}
       </div>

@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import { getBookmarks } from "@/app/actions/bookmarks";
-import { BookmarksContent } from "@/components/bookmarks-content";
+import { auth } from "@/lib/auth";
+import { getHiddenItems } from "@/app/actions/hidden";
+import { SettingsContent } from "@/components/settings-content";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Route Segment Config ───────────────────────────────────────────
@@ -12,70 +13,68 @@ export const dynamic = "force-dynamic";
 // ─── Metadata ───────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: "Bookmarks",
-  description: "Your saved articles on MorningStack.",
+  title: "Settings",
+  description: "Manage your MorningStack account and preferences.",
 };
 
 // ─── Page Component ─────────────────────────────────────────────────
 
 /**
- * Bookmarks page — shows all saved articles for the authenticated user.
+ * Settings page — Account info, Hidden Items management, Display Preferences.
  *
  * Protected by auth middleware in `src/middleware.ts` — unauthenticated
  * users are redirected to /login before this page renders.
  */
-export default async function BookmarksPage() {
+export default async function SettingsPage() {
   return (
     <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight text-ms-text-primary">
-        Bookmarks
+        Settings
       </h1>
       <p className="mt-1 text-sm text-ms-text-secondary">
-        Articles you&apos;ve saved for later.
+        Manage your account and preferences.
       </p>
 
       <div className="mt-6">
-        <Suspense fallback={<BookmarksSkeleton />}>
-          <BookmarksList />
+        <Suspense fallback={<SettingsSkeleton />}>
+          <SettingsData />
         </Suspense>
       </div>
     </main>
   );
 }
-
 // ─── Async data component ───────────────────────────────────────────
 
-/** Fetches bookmarks server-side and passes to client component. */
-async function BookmarksList() {
-  const bookmarkedArticles = await getBookmarks();
+/** Fetches session + hidden items and passes to client component. */
+async function SettingsData() {
+  const [session, hiddenItems] = await Promise.all([
+    auth(),
+    getHiddenItems(),
+  ]);
 
-  if (bookmarkedArticles.length === 0) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg font-medium text-ms-text-primary">
-            No bookmarks yet
-          </p>
-          <p className="mt-1 text-sm text-ms-text-muted">
-            Click the star icon on any article to save it here.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return <BookmarksContent articles={bookmarkedArticles} />;
+  return (
+    <SettingsContent
+      user={{
+        name: session?.user?.name ?? null,
+        email: session?.user?.email ?? null,
+        image: session?.user?.image ?? null,
+      }}
+      hiddenItems={hiddenItems}
+    />
+  );
 }
 
 // ─── Skeleton ───────────────────────────────────────────────────────
 
-/** Grid skeleton matching the bookmark card layout. */
-function BookmarksSkeleton() {
+/** Skeleton matching the settings layout during Suspense. */
+function SettingsSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <Skeleton key={i} className="h-48 rounded-lg" />
-      ))}
+    <div className="space-y-6">
+      <Skeleton className="h-10 w-80 rounded-lg" />
+      <div className="space-y-4">
+        <Skeleton className="h-24 rounded-lg" />
+        <Skeleton className="h-40 rounded-lg" />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { Article, ArticleSource, HideAction } from "@/types/article";
+import { toast } from "sonner";
+import type {
+  PersistedArticle,
+  ArticleSource,
+  HideAction,
+} from "@/types/article";
 import type { WeatherData } from "@/lib/sources/weather";
 import type { StockData } from "@/lib/sources/stocks";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -12,11 +16,6 @@ import {
   toggleBookmark,
   revertBookmark,
 } from "@/lib/features/bookmarks-slice";
-import {
-  setEditionDate,
-  setEditionType,
-  type EditionType,
-} from "@/lib/features/edition-slice";
 import {
   initializeHidden,
   hideArticle,
@@ -42,20 +41,16 @@ import { WorldNewsSection } from "@/components/sections/world-news-section";
 
 // ─── Props ──────────────────────────────────────────────────────────
 
-export interface HomeContentProps {
-  /** Published edition type rendered by the server. */
-  editionType: EditionType;
-  /** Published edition date rendered by the server. */
-  editionDate: string;
+interface HomeContentBaseProps {
+  /** Server-confirmed auth state used before the client session endpoint settles. */
+  isSignedIn: boolean;
+  /** Whether bookmark/hidden labels are known instead of guessed after an account-query failure. */
+  personalizationStatus: "available" | "unavailable";
   /** All articles from the current edition, grouped by source key. */
-  articlesBySource: Record<string, Article[]>;
+  articlesBySource: Record<string, PersistedArticle[]>;
   /** Flat list of all articles (for hero section scoring). */
-  allArticles: Article[];
-  /** Weather widget data. */
-  weather: WeatherData | null;
-  /** Stock widget data. */
-  stocks: StockData[];
-  /** Initial bookmarked article externalIds from server. */
+  allArticles: PersistedArticle[];
+  /** Initial bookmarked persisted article IDs from server. */
   bookmarkedIds?: string[];
   /** Initial hidden state from server. */
   hiddenState?: {
@@ -65,27 +60,58 @@ export interface HomeContentProps {
   };
 }
 
+/** Current briefing content requires live-view widgets. */
+interface CurrentHomeContentProps extends HomeContentBaseProps {
+  mode: "current";
+  weather: WeatherData | null;
+  stocks: StockData[];
+}
+
+/** Historical briefing content forbids widgets so archives never show current cached values. */
+interface HistoricalHomeContentProps extends HomeContentBaseProps {
+  mode: "historical";
+  weather?: never;
+  stocks?: never;
+}
+
+/** Home article layout with current-only widget requirements enforced by its mode discriminator. */
+export type HomeContentProps =
+  | CurrentHomeContentProps
+  | HistoricalHomeContentProps;
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
-/** Safely get articles for a source from the serialized map. */
+/**
+ * Reads one source list whenever a section renders so absent collectors degrade to an empty section.
+ * @param map - Serialized source-to-article record from the server.
+ * @param source - Section source identifier.
+ * @returns Persisted articles for that source, or an empty list.
+ * @example
+ * getArticles({ hackernews: [] }, "hackernews") // => []
+ */
 function getArticles(
-  map: Record<string, Article[]>,
+  map: Record<string, PersistedArticle[]>,
   source: ArticleSource,
-): Article[] {
+): PersistedArticle[] {
   return map[source] ?? [];
 }
 
 /**
- * Filter articles based on hidden state (article IDs, sources, topics).
- * Applies client-side filtering on top of server-side filtering for
- * optimistic UI updates.
+ * Applies the authenticated hidden snapshot and optimistic additions whenever HomeContent derives visible article lists.
+ * @param articles - Persisted edition articles before personalization.
+ * @param hiddenArticleIds - Exact database IDs hidden by the user.
+ * @param hiddenSources - Source IDs hidden by the user.
+ * @param hiddenTopics - Case-insensitive title keywords hidden by the user.
+ * @returns Articles that remain visible under all three filter categories.
+ * @example
+ * filterHiddenArticles([article], new Set([article.id]), new Set(), new Set()) // => []
  */
 function filterHiddenArticles(
-  articles: Article[],
+  articles: PersistedArticle[],
   hiddenArticleIds: Set<string>,
   hiddenSources: Set<string>,
   hiddenTopics: Set<string>,
-): Article[] {
+): PersistedArticle[] {
   if (
     hiddenArticleIds.size === 0 &&
     hiddenSources.size === 0 &&
@@ -96,7 +122,7 @@ function filterHiddenArticles(
 
   return articles.filter((article) => {
     // Filter by hidden article ID
-    if (hiddenArticleIds.has(article.externalId)) return false;
+    if (hiddenArticleIds.has(article.id)) return false;
 
     // Filter by hidden source
     if (hiddenSources.has(article.source)) return false;
@@ -125,18 +151,15 @@ function filterHiddenArticles(
  * Bookmark and hide callbacks use optimistic Redux updates with server
  * action persistence. Unauthenticated users are redirected to /login.
  */
-export function HomeContent({
-  editionType,
-  editionDate,
-  articlesBySource,
-  allArticles,
-  weather,
-  stocks,
-  bookmarkedIds: initialBookmarkedIds = [],
-  hiddenState: initialHiddenState,
-}: HomeContentProps) {
+export function HomeContent(props: HomeContentProps) {
+  const {
+    articlesBySource,
+    allArticles,
+    isSignedIn,
+    bookmarkedIds: initialBookmarkedIds = [],
+    hiddenState: initialHiddenState,
+  } = props;
   const dispatch = useAppDispatch();
-  const { data: session } = useSession();
   const router = useRouter();
 
   // ── Bookmarks state ──
@@ -158,12 +181,6 @@ export function HomeContent({
     (state) => state.hidden.hiddenTopics,
   );
   const hiddenInitialized = useAppSelector((state) => state.hidden.initialized);
-
-  // Keep shell metadata aligned with the server-rendered edition.
-  useEffect(() => {
-    dispatch(setEditionType(editionType));
-    dispatch(setEditionDate(editionDate));
-  }, [dispatch, editionDate, editionType]);
 
   // Initialize bookmarks from server data on first render
   useEffect(() => {
@@ -210,7 +227,7 @@ export function HomeContent({
   );
 
   const filteredArticlesBySource = useMemo(() => {
-    const result: Record<string, Article[]> = {};
+    const result: Record<string, PersistedArticle[]> = {};
     for (const [source, articles] of Object.entries(articlesBySource)) {
       result[source] = filterHiddenArticles(
         articles,
@@ -226,38 +243,40 @@ export function HomeContent({
     hiddenSourcesSet,
     hiddenTopicsSet,
   ]);
-
   /**
    * Handle bookmark toggle with optimistic UI.
    * If not logged in, redirect to /login with return URL.
    */
   const handleBookmark = useCallback(
-    async (article: Article) => {
-      if (!session?.user) {
+    async (article: PersistedArticle) => {
+      if (!isSignedIn) {
         router.push(
-          `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+          `/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`,
         );
         return;
       }
 
-      const isCurrentlyBookmarked = bookmarkedIdsArray.includes(
-        article.externalId,
-      );
+      const isCurrentlyBookmarked = bookmarkedIdsArray.includes(article.id);
 
       // Optimistic update
-      dispatch(toggleBookmark(article.externalId));
+      dispatch(toggleBookmark(article.id));
 
       // Persist to server
       const result = isCurrentlyBookmarked
-        ? await removeBookmark(article.externalId)
-        : await addBookmark(article.externalId);
+        ? await removeBookmark(article.id)
+        : await addBookmark(article.id);
 
       // Revert on failure
       if (!result.success) {
-        dispatch(revertBookmark(article.externalId));
+        dispatch(revertBookmark(article.id));
+        toast.error(
+          isCurrentlyBookmarked
+            ? "Couldn't remove bookmark. Try again."
+            : "Couldn't save bookmark. Try again.",
+        );
       }
     },
-    [session, router, dispatch, bookmarkedIdsArray],
+    [isSignedIn, router, dispatch, bookmarkedIdsArray],
   );
 
   /**
@@ -266,9 +285,9 @@ export function HomeContent({
    */
   const handleHide = useCallback(
     async (action: HideAction) => {
-      if (!session?.user) {
+      if (!isSignedIn) {
         router.push(
-          `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+          `/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`,
         );
         return;
       }
@@ -302,10 +321,21 @@ export function HomeContent({
             dispatch(revertHideTopic(action.targetId));
             break;
         }
+        const failureMessage =
+          action.type === "article"
+            ? "Couldn't hide this article. Try again."
+            : action.type === "source"
+              ? "Couldn't hide this source. Try again."
+              : "Couldn't hide this topic. Try again.";
+        toast.error(failureMessage);
       }
     },
-    [session, router, dispatch],
+    [isSignedIn, router, dispatch],
   );
+  const bookmarkAction =
+    props.personalizationStatus === "available" ? handleBookmark : undefined;
+  const hideAction =
+    props.personalizationStatus === "available" ? handleHide : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -315,46 +345,48 @@ export function HomeContent({
         <div className="min-w-0 lg:flex-[3]">
           <HeroSection
             articles={filteredAllArticles}
-            onBookmark={handleBookmark}
-            onHide={handleHide}
+            onBookmark={bookmarkAction}
+            onHide={hideAction}
             bookmarkedIds={bookmarkedIdsSet}
           />
         </div>
 
         {/* Widgets sidebar — secondary on mobile, right rail on desktop. */}
-        <aside
-          className="flex flex-col gap-3 lg:flex-[1]"
-          aria-label="Daily widgets"
-        >
-          <WeatherWidget data={weather} />
-          <StockWidget data={stocks} />
-        </aside>
+        {props.mode === "current" && (
+          <aside
+            className="flex flex-col gap-3 lg:flex-[1]"
+            aria-label="Daily widgets"
+          >
+            <WeatherWidget data={props.weather} />
+            <StockWidget data={props.stocks} />
+          </aside>
+        )}
       </div>
 
       {/* ── Tech / GitHub / HN / Reddit — 4-column grid ────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TechSection
           articles={getArticles(filteredArticlesBySource, "tech_rss")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
         <GitHubSection
           articles={getArticles(filteredArticlesBySource, "github")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
         <HackerNewsSection
           articles={getArticles(filteredArticlesBySource, "hackernews")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
         <RedditSection
           articles={getArticles(filteredArticlesBySource, "reddit")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
       </div>
@@ -363,16 +395,16 @@ export function HomeContent({
       <SnsSection
         blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
         youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
-        onBookmark={handleBookmark}
-        onHide={handleHide}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
 
       {/* ── GitHub Pull Requests ─────────────────────────────────── */}
       <GitHubPRsSection
         articles={getArticles(filteredArticlesBySource, "github_prs")}
-        onBookmark={handleBookmark}
-        onHide={handleHide}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
 
@@ -380,14 +412,14 @@ export function HomeContent({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <HatenaSection
           articles={getArticles(filteredArticlesBySource, "hatena")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
         <WorldNewsSection
           articles={getArticles(filteredArticlesBySource, "world_news")}
-          onBookmark={handleBookmark}
-          onHide={handleHide}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
       </div>

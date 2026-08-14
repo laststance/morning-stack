@@ -16,10 +16,10 @@ import type { AdapterAccountType } from "@auth/core/adapters";
 // ─── Enums ───────────────────────────────────────────────────────────
 
 /** Morning or evening edition type. */
-export const editionTypeEnum = pgEnum("edition_type", [
-  "morning",
-  "evening",
-]);
+export const editionTypeEnum = pgEnum("edition_type", ["morning", "evening"]);
+
+/** Edition type derived from the database enum so collectors, queries, and UI share one source of truth. */
+export type EditionType = (typeof editionTypeEnum.enumValues)[number];
 
 /** Draft or published edition status. */
 export const editionStatusEnum = pgEnum("edition_status", [
@@ -42,10 +42,7 @@ export const articleSourceEnum = pgEnum("article_source", [
 ]);
 
 /** OAuth provider for user authentication. */
-export const authProviderEnum = pgEnum("auth_provider", [
-  "google",
-  "github",
-]);
+export const authProviderEnum = pgEnum("auth_provider", ["google", "github"]);
 
 /** Target type for hidden items. */
 export const hiddenTargetTypeEnum = pgEnum("hidden_target_type", [
@@ -124,13 +121,17 @@ export const verificationTokens = pgTable(
 );
 
 /** Morning/evening editions published on a specific date. */
-export const editions = pgTable("editions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  type: editionTypeEnum("type").notNull(),
-  date: date("date", { mode: "string" }).notNull(),
-  publishedAt: timestamp("published_at", { withTimezone: true }),
-  status: editionStatusEnum("status").default("draft").notNull(),
-});
+export const editions = pgTable(
+  "editions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    type: editionTypeEnum("type").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    status: editionStatusEnum("status").default("draft").notNull(),
+  },
+  (table) => [uniqueIndex("editions_type_date_idx").on(table.type, table.date)],
+);
 
 /** Articles collected from various sources, linked to an edition. */
 export const articles = pgTable("articles", {
@@ -167,10 +168,7 @@ export const bookmarks = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("bookmarks_user_article_idx").on(
-      table.userId,
-      table.articleId,
-    ),
+    uniqueIndex("bookmarks_user_article_idx").on(table.userId, table.articleId),
   ],
 );
 

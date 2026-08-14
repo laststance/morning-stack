@@ -44,3 +44,9 @@ export interface Article {
   /** Source-specific extra data (comments, author, language, etc.). */
   metadata: Record<string, unknown>;
 }
+
+/** Article row loaded from Postgres whose stable ID scopes bookmark/hide mutations to one edition record. */
+export interface PersistedArticle extends Article {
+  /** Primary key of this exact persisted article row. */
+  id: string;
+}

@@ -17,7 +17,7 @@ export interface HiddenItem {
  * Hide an item for the current user.
  *
  * Supports three target types:
- * - `article`: hides a single article by its `externalId`.
+ * - `article`: hides a single persisted article by its database ID.
  * - `source`: hides all articles from a given source (e.g. "hackernews").
  * - `topic`: hides articles matching a keyword/topic.
  *
@@ -132,13 +132,28 @@ export async function getHiddenState(): Promise<{
     return { hiddenArticleIds: [], hiddenSources: [], hiddenTopics: [] };
   }
 
+  return getHiddenStateByUserId(session.user.id);
+}
+
+/**
+ * Loads hidden filters when HomePage has already resolved authentication once for all personalization queries.
+ * @param userId - Authenticated user ID supplied by the home route.
+ * @returns Hidden persisted article IDs, source IDs, and topic keywords.
+ * @example
+ * await getHiddenStateByUserId("e2e-user")
+ */
+export async function getHiddenStateByUserId(userId: string): Promise<{
+  hiddenArticleIds: string[];
+  hiddenSources: string[];
+  hiddenTopics: string[];
+}> {
   const rows = await db
     .select({
       targetType: hiddenItems.targetType,
       targetId: hiddenItems.targetId,
     })
     .from(hiddenItems)
-    .where(eq(hiddenItems.userId, session.user.id));
+    .where(eq(hiddenItems.userId, userId));
 
   const hiddenArticleIds: string[] = [];
   const hiddenSources: string[] = [];

@@ -1,48 +1,36 @@
 "use server";
 
-import { eq, and, desc } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { bookmarks, articles } from "@/lib/db/schema";
-import type { Article, ArticleSource } from "@/types/article";
+import { articles, bookmarks } from "@/lib/db/schema";
+import type { PersistedArticle } from "@/types/article";
 
 /**
- * Add a bookmark for the current user.
- *
- * Looks up the article by `externalId`, then inserts a bookmark row.
- * Returns `{ success: true }` on success, or `{ success: false, error }` on failure.
- * Silently succeeds if the bookmark already exists (idempotent).
+ * Adds a bookmark for the exact persisted article when an authenticated feed action triggers.
+ * @param articleId - Postgres primary key of the displayed article row.
+ * @returns Success for a new/existing bookmark, otherwise a specific authentication/persistence error.
+ * @example
+ * await addBookmark("10000000-0000-4000-8000-000000000001")
  */
 export async function addBookmark(
-  externalId: string,
+  articleId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Not authenticated" };
   }
 
-  const articleRows = await db
-    .select({ id: articles.id })
-    .from(articles)
-    .where(eq(articles.externalId, externalId))
-    .limit(1);
-
-  const article = articleRows[0];
-  if (!article) {
-    return { success: false, error: "Article not found" };
-  }
-
   try {
-    await db.insert(bookmarks).values({
-      userId: session.user.id,
-      articleId: article.id,
-    });
-  } catch (error: unknown) {
-    // Unique constraint violation — bookmark already exists
-    const msg = error instanceof Error ? error.message : String(error);
-    if (msg.includes("unique") || msg.includes("duplicate")) {
-      return { success: true };
-    }
+    await db
+      .insert(bookmarks)
+      .values({ userId: session.user.id, articleId })
+      .onConflictDoNothing({
+        target: [bookmarks.userId, bookmarks.articleId],
+      });
+  } catch (error) {
+    console.error("[Bookmarks] Failed to add persisted article:", error);
     return { success: false, error: "Failed to add bookmark" };
   }
 
@@ -50,29 +38,18 @@ export async function addBookmark(
 }
 
 /**
- * Remove a bookmark for the current user.
- *
- * Looks up the article by `externalId`, then deletes the bookmark row.
- * Silently succeeds if no bookmark exists (idempotent).
+ * Removes a bookmark for the exact persisted article when an authenticated feed or bookmark action triggers.
+ * @param articleId - Postgres primary key of the displayed article row.
+ * @returns Success when deletion is complete/idempotent, otherwise an authentication error.
+ * @example
+ * await removeBookmark("10000000-0000-4000-8000-000000000001")
  */
 export async function removeBookmark(
-  externalId: string,
+  articleId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Not authenticated" };
-  }
-
-  const articleRows = await db
-    .select({ id: articles.id })
-    .from(articles)
-    .where(eq(articles.externalId, externalId))
-    .limit(1);
-
-  const article = articleRows[0];
-  if (!article) {
-    // Article not in DB — nothing to remove
-    return { success: true };
   }
 
   await db
@@ -80,7 +57,7 @@ export async function removeBookmark(
     .where(
       and(
         eq(bookmarks.userId, session.user.id),
-        eq(bookmarks.articleId, article.id),
+        eq(bookmarks.articleId, articleId),
       ),
     );
 
@@ -88,19 +65,18 @@ export async function removeBookmark(
 }
 
 /**
- * Get all bookmarked articles for the current user.
- *
- * Returns articles sorted by most recently bookmarked first.
- * Returns empty array if not authenticated.
+ * Loads an authenticated user's saved article rows when the Bookmarks page renders.
+ * @returns Persisted articles newest-bookmark first, or an empty list when signed out.
+ * @example
+ * const savedArticles = await getBookmarks()
  */
-export async function getBookmarks(): Promise<Article[]> {
+export async function getBookmarks(): Promise<PersistedArticle[]> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return [];
-  }
+  if (!session?.user?.id) return [];
 
   const rows = await db
     .select({
+      id: articles.id,
       source: articles.source,
       title: articles.title,
       url: articles.url,
@@ -109,7 +85,6 @@ export async function getBookmarks(): Promise<Article[]> {
       score: articles.score,
       externalId: articles.externalId,
       metadata: articles.metadata,
-      bookmarkedAt: bookmarks.createdAt,
     })
     .from(bookmarks)
     .innerJoin(articles, eq(bookmarks.articleId, articles.id))
@@ -117,7 +92,8 @@ export async function getBookmarks(): Promise<Article[]> {
     .orderBy(desc(bookmarks.createdAt));
 
   return rows.map((row) => ({
-    source: row.source as ArticleSource,
+    id: row.id,
+    source: row.source,
     title: row.title,
     url: row.url,
     thumbnailUrl: row.thumbnailUrl ?? undefined,
@@ -129,23 +105,31 @@ export async function getBookmarks(): Promise<Article[]> {
 }
 
 /**
- * Get the list of bookmarked article externalIds for the current user.
- *
- * Lighter than `getBookmarks()` — only returns IDs for bookmark state initialization.
+ * Loads bookmark state by persisted article ID when HomePage initializes authenticated personalization.
+ * @param userId - Authenticated user ID already resolved once by the route.
+ * @returns Exact article primary keys saved by that user.
+ * @example
+ * await getBookmarkedArticleIdsByUserId("e2e-user")
+ */
+export async function getBookmarkedArticleIdsByUserId(
+  userId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ articleId: bookmarks.articleId })
+    .from(bookmarks)
+    .where(eq(bookmarks.userId, userId));
+
+  return rows.map((row) => row.articleId);
+}
+
+/**
+ * Preserves the authenticated server-action API for non-home callers that have not already resolved a session.
+ * @returns Persisted article IDs, or an empty list when signed out.
+ * @example
+ * const bookmarkedIds = await getBookmarkedIds()
  */
 export async function getBookmarkedIds(): Promise<string[]> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return [];
-  }
-
-  const rows = await db
-    .select({ externalId: articles.externalId })
-    .from(bookmarks)
-    .innerJoin(articles, eq(bookmarks.articleId, articles.id))
-    .where(eq(bookmarks.userId, session.user.id));
-
-  return rows
-    .map((row) => row.externalId)
-    .filter((id): id is string => id !== null);
+  if (!session?.user?.id) return [];
+  return getBookmarkedArticleIdsByUserId(session.user.id);
 }

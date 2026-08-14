@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface BookmarksState {
-  /** Set of bookmarked article externalIds for fast lookup. */
+  /** Persisted article IDs bookmarked by the signed-in user. */
   bookmarkedIds: string[];
   /** Whether the initial bookmark list has been loaded from the server. */
   initialized: boolean;
@@ -23,7 +23,7 @@ const bookmarksSlice = createSlice({
   name: "bookmarks",
   initialState,
   reducers: {
-    /** Load the initial set of bookmarked externalIds from server data. */
+    /** Load the initial persisted article IDs from server data. */
     initializeBookmarks(state, action: PayloadAction<string[]>) {
       state.bookmarkedIds = action.payload;
       state.initialized = true;

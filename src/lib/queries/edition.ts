@@ -1,13 +1,12 @@
-import { eq, and, desc } from "drizzle-orm";
+import { and, desc, eq, min } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { editions, articles, hiddenItems } from "@/lib/db/schema";
-import { auth } from "@/lib/auth";
+import { articles, editions, type EditionType } from "@/lib/db/schema";
 import {
   getCachedOrPersistedWidgetData,
   type WidgetData,
 } from "@/lib/widget-snapshots";
-import type { Article, ArticleSource } from "@/types/article";
+import type { ArticleSource, PersistedArticle } from "@/types/article";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -16,13 +15,13 @@ export interface EditionData {
   /** Edition database ID. */
   id: string;
   /** Edition type (morning or evening). */
-  type: "morning" | "evening";
+  type: EditionType;
   /** Edition date string (YYYY-MM-DD). */
   date: string;
   /** All articles in this edition, grouped by source. */
-  articlesBySource: Map<ArticleSource, Article[]>;
+  articlesBySource: Map<ArticleSource, PersistedArticle[]>;
   /** Flat list of all articles (for the hero section). */
-  allArticles: Article[];
+  allArticles: PersistedArticle[];
 }
 
 // ─── Public API ─────────────────────────────────────────────────────
@@ -40,7 +39,7 @@ export interface EditionData {
  * @returns Edition data with grouped articles, or `null` if no published edition exists.
  */
 export async function getEdition(
-  type: "morning" | "evening",
+  type: EditionType,
   date: string,
 ): Promise<EditionData | null> {
   const editionRows = await db
@@ -60,6 +59,7 @@ export async function getEdition(
 
   const articleRows = await db
     .select({
+      id: articles.id,
       source: articles.source,
       title: articles.title,
       url: articles.url,
@@ -74,8 +74,9 @@ export async function getEdition(
     .where(eq(articles.editionId, edition.id))
     .orderBy(desc(articles.score));
 
-  let allArticles: Article[] = articleRows.map((row) => ({
-    source: row.source as ArticleSource,
+  const allArticles: PersistedArticle[] = articleRows.map((row) => ({
+    id: row.id,
+    source: row.source,
     title: row.title,
     url: row.url,
     thumbnailUrl: row.thumbnailUrl ?? undefined,
@@ -85,10 +86,7 @@ export async function getEdition(
     metadata: (row.metadata as Record<string, unknown>) ?? {},
   }));
 
-  // Apply server-side hidden item filtering for authenticated users
-  allArticles = await applyHiddenFilters(allArticles);
-
-  const articlesBySource = new Map<ArticleSource, Article[]>();
+  const articlesBySource = new Map<ArticleSource, PersistedArticle[]>();
   for (const article of allArticles) {
     const existing = articlesBySource.get(article.source) ?? [];
     existing.push(article);
@@ -97,7 +95,7 @@ export async function getEdition(
 
   return {
     id: edition.id,
-    type: edition.type as "morning" | "evening",
+    type: edition.type,
     date: edition.date,
     allArticles,
     articlesBySource,
@@ -124,7 +122,24 @@ export async function getLatestEdition(): Promise<EditionData | null> {
   const edition = editionRows[0];
   if (!edition) return null;
 
-  return getEdition(edition.type as "morning" | "evening", edition.date);
+  return getEdition(edition.type, edition.date);
+}
+
+/**
+ * Reads the shared lower date bound used by all archive controls whenever HomePage resolves historical navigation.
+ * @returns Earliest published `YYYY-MM-DD` date, or `null` when no published editions exist.
+ * @example
+ * await getEarliestPublishedEditionDate() // => "2026-06-16"
+ */
+export async function getEarliestPublishedEditionDate(): Promise<
+  string | null
+> {
+  const rows = await db
+    .select({ earliestDate: min(editions.date) })
+    .from(editions)
+    .where(eq(editions.status, "published"));
+
+  return rows[0]?.earliestDate ?? null;
 }
 
 /**
@@ -135,66 +150,4 @@ export async function getLatestEdition(): Promise<EditionData | null> {
  */
 export async function getWidgetData(): Promise<WidgetData> {
   return getCachedOrPersistedWidgetData();
-}
-
-// ─── Internal Helpers ────────────────────────────────────────────────
-
-/**
- * Filter articles for a signed-in user without making auth required for public feeds.
- * @param allArticles - Articles loaded from the published edition.
- * @returns Filtered articles for signed-in users, or the original list when auth/filtering is unavailable.
- * @example
- * const visibleArticles = await applyHiddenFilters(allArticles);
- */
-async function applyHiddenFilters(allArticles: Article[]): Promise<Article[]> {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) return allArticles;
-
-    const hiddenRows = await db
-      .select({
-        targetType: hiddenItems.targetType,
-        targetId: hiddenItems.targetId,
-      })
-      .from(hiddenItems)
-      .where(eq(hiddenItems.userId, session.user.id));
-
-    if (hiddenRows.length === 0) return allArticles;
-
-    const hiddenArticleIds = new Set<string>();
-    const hiddenSources = new Set<string>();
-    const hiddenTopics: string[] = [];
-
-    for (const row of hiddenRows) {
-      switch (row.targetType) {
-        case "article":
-          hiddenArticleIds.add(row.targetId);
-          break;
-        case "source":
-          hiddenSources.add(row.targetId);
-          break;
-        case "topic":
-          hiddenTopics.push(row.targetId.toLowerCase());
-          break;
-      }
-    }
-
-    return allArticles.filter((article) => {
-      if (hiddenArticleIds.has(article.externalId)) return false;
-      if (hiddenSources.has(article.source)) return false;
-      if (hiddenTopics.length > 0) {
-        const titleLower = article.title.toLowerCase();
-        for (const topic of hiddenTopics) {
-          if (titleLower.includes(topic)) return false;
-        }
-      }
-      return true;
-    });
-  } catch (error) {
-    console.error(
-      "[Edition] Hidden filters unavailable; returning unfiltered public feed:",
-      error,
-    );
-    return allArticles;
-  }
 }

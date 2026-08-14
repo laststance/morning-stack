@@ -6,8 +6,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SessionProvider } from "@/components/session-provider";
 import { StoreProvider } from "@/components/store-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Header } from "@/components/layout/header";
-import { TickerWrapper } from "@/components/layout/ticker-wrapper";
 import "./globals.css";
 
 const inter = Inter({
@@ -87,8 +85,6 @@ export default function RootLayout({
         <ThemeProvider>
           <StoreProvider>
             <SessionProvider>
-              <TickerWrapper />
-              <Header />
               {children}
               <Toaster theme="system" position="bottom-right" />
             </SessionProvider>

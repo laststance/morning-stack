@@ -14,4 +14,18 @@
 **Priority:** P2
 **Depends on:** None
 
+## Data Integrity
+
+### Enforce one Edition per type and date
+
+**What:** Audit duplicate Edition rows, resolve any conflicts safely, and add a unique index on `editions(type, date)`.
+
+**Why:** The collector checks for an existing Edition before inserting, but concurrent collection requests can both pass that check because the database does not enforce the product invariant.
+
+**Context:** `findExistingEdition()` and `getWritableDraftEdition()` implement normal retry idempotency with a select-then-insert flow. Historical URLs assume one deterministic Edition per Morning/Evening date, while `getEdition()` currently limits an unconstrained query to one row. Run a production duplicate audit before generating the migration; do not delete or merge rows without reviewing their linked articles and publication status.
+
+**Effort:** M
+**Priority:** P1
+**Depends on:** Production duplicate audit
+
 ## Completed

@@ -13,6 +13,7 @@ import { HomeContent } from "@/components/home-content";
 import { HomeNavigationProvider } from "@/components/home-navigation-provider";
 import { Header } from "@/components/layout/header";
 import { TickerWrapper } from "@/components/layout/ticker-wrapper";
+import { SessionProvider } from "@/components/session-provider";
 import { auth } from "@/lib/auth";
 import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
 import { getDefaultEditionType } from "@/lib/edition-date/get-default-edition-type";
@@ -78,14 +79,17 @@ export default async function HomePage({
     getLatestEdition,
     getWidgetData,
   });
+  const sessionPromise = auth();
   const personalizationPromise = loadPersonalization({
     getUserId: async () => {
-      const session = await auth();
+      const session = await sessionPromise;
       return session?.user?.id ?? null;
     },
     getBookmarkedArticleIdsByUserId,
     getHiddenStateByUserId,
   });
+  // Auth failures must keep the public briefing readable while personalization reports its warning state.
+  const sessionForProviderPromise = sessionPromise.catch(() => null);
   const bounds = await loadEditionBounds(getEarliestPublishedEditionDate);
 
   // The shared lower-bound redirect preserves edition type even if that type is missing there.
@@ -97,51 +101,54 @@ export default async function HomePage({
     if (boundaryRedirectHref) redirect(boundaryRedirectHref);
   }
 
-  const [content, personalization] = await Promise.all([
+  const [content, personalization, session] = await Promise.all([
     contentPromise,
     personalizationPromise,
+    sessionForProviderPromise,
   ]);
   const earliestPublishedDate =
     bounds.status === "available" ? bounds.earliestPublishedDate : null;
 
   return (
-    <HomeNavigationProvider
-      requestedDate={selection.requestedDate}
-      requestedEditionType={selection.requestedEditionType}
-    >
-      {!selection.isHistoricalSelection && <TickerWrapper />}
-      <Header
+    <SessionProvider session={session}>
+      <HomeNavigationProvider
         requestedDate={selection.requestedDate}
         requestedEditionType={selection.requestedEditionType}
-        isHistoricalSelection={selection.isHistoricalSelection}
-      />
-      <EditionDateNavigator
-        requestedDate={selection.requestedDate}
-        today={today}
-        earliestPublishedDate={earliestPublishedDate}
-      />
-
-      <main className="relative mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <HomeWarnings
-          isBoundsUnavailable={bounds.status === "unavailable"}
-          isPersonalizationUnavailable={
-            personalization.status === "unavailable"
-          }
+      >
+        {!selection.isHistoricalSelection && <TickerWrapper />}
+        <Header
+          requestedDate={selection.requestedDate}
+          requestedEditionType={selection.requestedEditionType}
+          isHistoricalSelection={selection.isHistoricalSelection}
         />
-        {content.status === "found" && content.isLatestFallback && (
-          <p className="text-ms-text-secondary text-sm" role="status">
-            Latest available: {formatEditionDate(content.edition.date)}{" "}
-            {content.edition.type === "morning" ? "Morning" : "Evening"}
-          </p>
-        )}
-        {renderEditionResult(
-          content,
-          personalization,
-          selection.isHistoricalSelection,
-          earliestPublishedDate,
-        )}
-      </main>
-    </HomeNavigationProvider>
+        <EditionDateNavigator
+          requestedDate={selection.requestedDate}
+          today={today}
+          earliestPublishedDate={earliestPublishedDate}
+        />
+
+        <main className="relative mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <HomeWarnings
+            isBoundsUnavailable={bounds.status === "unavailable"}
+            isPersonalizationUnavailable={
+              personalization.status === "unavailable"
+            }
+          />
+          {content.status === "found" && content.isLatestFallback && (
+            <p className="text-ms-text-secondary text-sm" role="status">
+              Latest available: {formatEditionDate(content.edition.date)}{" "}
+              {content.edition.type === "morning" ? "Morning" : "Evening"}
+            </p>
+          )}
+          {renderEditionResult(
+            content,
+            personalization,
+            selection.isHistoricalSelection,
+            earliestPublishedDate,
+          )}
+        </main>
+      </HomeNavigationProvider>
+    </SessionProvider>
   );
 }
 

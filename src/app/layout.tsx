@@ -3,7 +3,6 @@ import { Inter, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { SessionProvider } from "@/components/session-provider";
 import { StoreProvider } from "@/components/store-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -84,10 +83,8 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <StoreProvider>
-            <SessionProvider>
-              {children}
-              <Toaster theme="system" position="bottom-right" />
-            </SessionProvider>
+            {children}
+            <Toaster theme="system" position="bottom-right" />
           </StoreProvider>
         </ThemeProvider>
         <Analytics />

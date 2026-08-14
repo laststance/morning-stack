@@ -1,5 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { TickerWrapper } from "@/components/layout/ticker-wrapper";
+import { SessionProvider } from "@/components/session-provider";
+import { auth } from "@/lib/auth";
 
 /**
  * Keeps normal live chrome on public/account pages after HomePage takes ownership of date-dependent ticker visibility.
@@ -9,16 +11,22 @@ import { TickerWrapper } from "@/components/layout/ticker-wrapper";
  * @example
  * <SiteLayout><main>About</main></SiteLayout>
  */
-export default function SiteLayout({
+export default async function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Public site pages stay readable when optional personalization is unavailable.
+  const session = await auth().catch((error: unknown) => {
+    console.error("[SiteLayout] Session unavailable:", error);
+    return null;
+  });
+
   return (
-    <>
+    <SessionProvider session={session}>
       <TickerWrapper />
       <Header />
       {children}
-    </>
+    </SessionProvider>
   );
 }

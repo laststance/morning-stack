@@ -18,11 +18,11 @@ export interface BookmarksContentProps {
 }
 
 /**
- * Client-side bookmarks grid with optimistic un-bookmark support.
- *
- * When a user removes a bookmark, the card disappears immediately
- * (optimistic) while the server action runs in the background.
- * On failure, the card reappears.
+ * Renders the server-confirmed bookmark grid and applies optimistic removal while each Server Action is pending.
+ * @param props - Latest bookmarked articles from the route render.
+ * @returns Bookmark cards or the empty-bookmarks recovery state.
+ * @example
+ * <BookmarksContent articles={articles} />
  */
 export function BookmarksContent({ articles }: BookmarksContentProps) {
   const dispatch = useAppDispatch();
@@ -30,17 +30,14 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
   const bookmarkedIdsArray = useAppSelector(
     (state) => state.bookmarks.bookmarkedIds,
   );
-  const initialized = useAppSelector((state) => state.bookmarks.initialized);
 
   // Track removed article IDs for optimistic removal from this page's list
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
-  // Initialize bookmarks from the articles on this page
+  // Every server refresh is authoritative, including an empty bookmark list.
   useEffect(() => {
-    if (!initialized) {
-      dispatch(initializeBookmarks(articles.map((article) => article.id)));
-    }
-  }, [dispatch, initialized, articles]);
+    dispatch(initializeBookmarks(articles.map((article) => article.id)));
+  }, [dispatch, articles]);
 
   const bookmarkedIdsSet = useMemo(
     () => new Set(bookmarkedIdsArray),

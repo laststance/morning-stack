@@ -60,6 +60,34 @@ test("missing historical edition stays missing even when current-only widgets ar
   });
 });
 
+test("current edition remains readable when optional widget loading fails", async () => {
+  // Arrange
+  const selection = resolveHomeSearchParams(
+    { edition: "evening" },
+    "2030-01-15",
+    "morning",
+  );
+
+  // Act
+  const result = await loadEditionContent(selection, {
+    getEdition: async () => LATEST_EDITION,
+    getLatestEdition: async () => null,
+    getWidgetData: async () => {
+      throw new Error("widgets unavailable");
+    },
+  });
+
+  // Assert
+  expect(result).toEqual({
+    status: "found",
+    requestedDate: "2030-01-15",
+    requestedEditionType: "evening",
+    edition: LATEST_EDITION,
+    widgets: null,
+    isLatestFallback: false,
+  });
+});
+
 test("edition query failures render retryable unavailable state instead of claiming content is missing", async () => {
   // Arrange
   const selection = resolveHomeSearchParams(

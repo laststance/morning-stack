@@ -4,7 +4,6 @@ const TODAY = "2030-01-15";
 const YESTERDAY = "2030-01-14";
 const EARLIEST_ARCHIVE_DATE = "2030-01-12";
 const E2E_SESSION_TOKEN = "e2e-session-token";
-const E2E_BASE_URL = `http://localhost:${process.env.E2E_PORT ?? "3198"}`;
 
 test.describe("Historical edition navigation", () => {
   test("previous and next switch between article-only history and widget-rich today", async ({
@@ -82,6 +81,26 @@ test.describe("Historical edition navigation", () => {
     await expect(dateTrigger).toBeFocused();
   });
 
+  test("date picker closes when the selected date is chosen again", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto(`/?date=${YESTERDAY}&edition=morning`);
+    const dateTrigger = page.getByRole("button", {
+      name: /Choose edition date/,
+    });
+    await dateTrigger.click();
+
+    // Act
+    await page
+      .getByRole("button", { name: "Monday, January 14th, 2030" })
+      .click();
+
+    // Assert
+    await expect(dateTrigger).toHaveAttribute("aria-expanded", "false");
+    await expect(dateTrigger).toBeFocused();
+  });
+
   test("unknown older dates redirect to the shared lower bound without changing edition type", async ({
     page,
   }) => {
@@ -128,15 +147,17 @@ test.describe("Historical edition navigation", () => {
   });
 
   test("persisted article IDs keep same-source identities independent across editions", async ({
+    baseURL,
     context,
     page,
   }) => {
     // Arrange
+    if (!baseURL) throw new Error("Playwright baseURL is required for cookies");
     await context.addCookies([
       {
         name: "authjs.session-token",
         value: E2E_SESSION_TOKEN,
-        url: E2E_BASE_URL,
+        url: baseURL,
       },
     ]);
     await page.goto("/?edition=morning");
@@ -163,14 +184,30 @@ test.describe("Historical edition navigation", () => {
     ).toBeVisible();
   });
 
-  test("date rail and article layout stay inside a 320px viewport", async ({
+  test("date rail, touch actions, and article layout stay inside a 320px viewport", async ({
     page,
   }) => {
     // Arrange
     await page.setViewportSize({ width: 320, height: 812 });
     await page.goto(`/?date=${YESTERDAY}&edition=morning`);
+    const historicalStory = page
+      .getByRole("region", { name: "Hacker News" })
+      .locator("article");
+    const bookmarkButton = historicalStory.getByRole("button", {
+      name: "Bookmark",
+    });
+    const shareButton = historicalStory.getByRole("button", {
+      name: "Share article",
+    });
+    const hideButton = historicalStory.getByRole("button", {
+      name: "Hide options",
+    });
 
     // Act
+    const bookmarkBox = await bookmarkButton.boundingBox();
+    const shareBox = await shareButton.boundingBox();
+    const hideBox = await hideButton.boundingBox();
+    await shareButton.click();
     const widths = await page.evaluate(() => ({
       client: document.documentElement.clientWidth,
       scroll: document.documentElement.scrollWidth,
@@ -178,6 +215,15 @@ test.describe("Historical edition navigation", () => {
 
     // Assert
     expect(widths).toEqual({ client: 320, scroll: 320 });
+    expect(bookmarkBox?.width).toBeGreaterThanOrEqual(44);
+    expect(bookmarkBox?.height).toBeGreaterThanOrEqual(44);
+    expect(shareBox?.width).toBeGreaterThanOrEqual(44);
+    expect(shareBox?.height).toBeGreaterThanOrEqual(44);
+    expect(hideBox?.width).toBeGreaterThanOrEqual(44);
+    expect(hideBox?.height).toBeGreaterThanOrEqual(44);
+    await expect(
+      historicalStory.getByRole("button", { name: "Share to X" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("navigation", { name: "Edition date" }),
     ).toBeVisible();

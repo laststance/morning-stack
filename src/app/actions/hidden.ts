@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hiddenItems } from "@/lib/db/schema";
+import { getHiddenStateByUserId } from "@/lib/personalization/get-hidden-state-by-user-id";
 
 /** Represents a single hidden-item record returned to the client. */
 export interface HiddenItem {
@@ -133,45 +134,4 @@ export async function getHiddenState(): Promise<{
   }
 
   return getHiddenStateByUserId(session.user.id);
-}
-
-/**
- * Loads hidden filters when HomePage has already resolved authentication once for all personalization queries.
- * @param userId - Authenticated user ID supplied by the home route.
- * @returns Hidden persisted article IDs, source IDs, and topic keywords.
- * @example
- * await getHiddenStateByUserId("e2e-user")
- */
-export async function getHiddenStateByUserId(userId: string): Promise<{
-  hiddenArticleIds: string[];
-  hiddenSources: string[];
-  hiddenTopics: string[];
-}> {
-  const rows = await db
-    .select({
-      targetType: hiddenItems.targetType,
-      targetId: hiddenItems.targetId,
-    })
-    .from(hiddenItems)
-    .where(eq(hiddenItems.userId, userId));
-
-  const hiddenArticleIds: string[] = [];
-  const hiddenSources: string[] = [];
-  const hiddenTopics: string[] = [];
-
-  for (const row of rows) {
-    switch (row.targetType) {
-      case "article":
-        hiddenArticleIds.push(row.targetId);
-        break;
-      case "source":
-        hiddenSources.push(row.targetId);
-        break;
-      case "topic":
-        hiddenTopics.push(row.targetId);
-        break;
-    }
-  }
-
-  return { hiddenArticleIds, hiddenSources, hiddenTopics };
 }

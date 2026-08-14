@@ -17,6 +17,7 @@ MorningStack is a twice-daily tech briefing for developers. It collects high-sig
 - The home page chooses the current edition by Asia/Tokyo time: before 12:00 JST shows Morning, 12:00+ JST shows Evening.
 - If today's matching edition does not exist yet, the app falls back to the latest published edition.
 - Historical editions are addressable by `?date=YYYY-MM-DD&edition=morning|evening` and render persisted articles only, without live weather, stocks, or ticker data.
+- Dates earlier than the archive redirect to its earliest published date while preserving the requested Morning or Evening edition.
 - Signed-in users can bookmark articles, hide specific articles, hide entire sources, and hide topic keywords.
 - The Settings page lets signed-in users view account information, manage hidden items, choose display preferences, and sign out.
 - Auth is optional for reading. Public feed rendering should continue even if personalization is unavailable.

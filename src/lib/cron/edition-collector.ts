@@ -109,11 +109,54 @@ export async function handleCollectRequest(
     const editionType = options.editionType ?? determineEditionType();
     const today = getTodayDateString();
 
-    return await db.transaction(async (transaction) => {
-      console.log(
-        `[Cron] Starting ${editionType} edition collection for ${today}`,
-      );
+    console.log(
+      `[Cron] Starting ${editionType} edition collection for ${today}`,
+    );
 
+    const publishedEdition = await findPublishedEdition(editionType, today);
+    if (publishedEdition) {
+      const { weatherData, stockData } = await fetchWidgetSources();
+      const widgetResults = getWidgetSourceResults(weatherData, stockData);
+      await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
+
+      console.log(
+        `[Cron] ${editionType} edition for ${today} already published (${publishedEdition.id}), skipping`,
+      );
+      return NextResponse.json({
+        status: "skipped",
+        reason: "Edition already published",
+        editionId: publishedEdition.id,
+        editionType,
+        date: today,
+        widgets: widgetResults,
+      });
+    }
+
+    // Slow external requests complete before the lock-owning write transaction begins.
+    const {
+      allArticles,
+      sourceResults: articleSourceResults,
+      weatherData,
+      stockData,
+    } = await fetchAllSources();
+    sourceResults.push(...articleSourceResults);
+    sourceResults.push(...getWidgetSourceResults(weatherData, stockData));
+
+    if (allArticles.length === 0) {
+      const elapsed = Date.now() - startTime;
+      await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
+      console.warn(`[Cron] No articles collected after ${elapsed}ms, skipping`);
+      return NextResponse.json({
+        status: "skipped",
+        reason: "No articles collected",
+        editionType,
+        date: today,
+        sources: sourceResults,
+        elapsedMs: elapsed,
+      });
+    }
+
+    const response = await db.transaction(async (transaction) => {
       const hasCollectionLock = await tryAcquireEditionCollectionLock(
         transaction,
         editionType,
@@ -134,9 +177,7 @@ export async function handleCollectRequest(
         today,
       );
       if (existingEdition?.status === "published") {
-        const { weatherData, stockData } = await fetchWidgetSources();
         const widgetResults = getWidgetSourceResults(weatherData, stockData);
-        await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
 
         console.log(
           `[Cron] ${editionType} edition for ${today} already published (${existingEdition.id}), skipping`,
@@ -169,18 +210,6 @@ export async function handleCollectRequest(
       }
 
       const edition = { id: editionClaim.id };
-      const {
-        allArticles,
-        sourceResults: articleSourceResults,
-        weatherData,
-        stockData,
-      } = await fetchAllSources();
-      sourceResults.push(...articleSourceResults);
-
-      if (allArticles.length === 0) {
-        throw new Error("No articles collected; rolling back draft changes");
-      }
-
       await transaction.insert(articles).values(
         allArticles.map((article) => ({
           editionId: edition.id,
@@ -194,9 +223,6 @@ export async function handleCollectRequest(
           metadata: article.metadata,
         })),
       );
-
-      sourceResults.push(...getWidgetSourceResults(weatherData, stockData));
-      await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
 
       await transaction
         .update(editions)
@@ -217,6 +243,10 @@ export async function handleCollectRequest(
       console.log(`[Cron] Edition published in ${elapsed}ms:`, summary);
       return NextResponse.json(summary);
     });
+
+    // Best-effort widget persistence stays outside the edition lock and cannot roll back published articles.
+    await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
+    return response;
   } catch (error) {
     const elapsed = Date.now() - startTime;
     console.error(`[Cron] Collection failed after ${elapsed}ms:`, error);
@@ -231,6 +261,33 @@ export async function handleCollectRequest(
       { status: 500 },
     );
   }
+}
+
+/**
+ * Finds an already-published target before external collection so idempotent cron reruns only refresh optional widgets.
+ * @param editionType - Morning or evening collection target.
+ * @param today - JST date string in YYYY-MM-DD format.
+ * @returns The published edition ID, or null when this run may collect articles.
+ * @example
+ * await findPublishedEdition("morning", "2026-06-16")
+ */
+async function findPublishedEdition(
+  editionType: EditionType,
+  today: string,
+): Promise<{ id: string } | null> {
+  const rows = await db
+    .select({ id: editions.id })
+    .from(editions)
+    .where(
+      and(
+        eq(editions.type, editionType),
+        eq(editions.date, today),
+        eq(editions.status, "published"),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
 }
 
 /**
@@ -272,7 +329,7 @@ async function findExistingEdition(
 }
 
 /**
- * Reuse an unpublished edition or create a fresh draft before source fetches.
+ * Reuse an unpublished edition or create a fresh draft after source fetches have completed.
  * @param transaction - Lock-owning transaction used for all edition/article writes.
  * @param existingEdition - Existing row for the target date, usually a stale draft.
  * @param input - Edition type and date used when creating a new draft.

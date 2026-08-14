@@ -15,6 +15,13 @@ import {
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 
+/**
+ * Renders the shared DayPicker skin with deterministic formatting for server and client hydration.
+ * @param props - DayPicker behavior, presentation overrides, and optional button variant.
+ * @returns A themed calendar that forwards all supported DayPicker props.
+ * @example
+ * <Calendar mode="single" timeZone="Asia/Tokyo" />
+ */
 function Calendar({
   className,
   classNames,
@@ -23,6 +30,7 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  timeZone = "UTC",
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
@@ -39,9 +47,10 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
+      timeZone={timeZone}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+          date.toLocaleString("en-US", { month: "short", timeZone }),
         ...formatters,
       }}
       classNames={{
@@ -162,7 +171,9 @@ function Calendar({
             <ChevronDownIcon className={cn("size-4", className)} {...props} />
           );
         },
-        DayButton: CalendarDayButton,
+        DayButton: (dayButtonProps) => (
+          <CalendarDayButton {...dayButtonProps} timeZone={timeZone} />
+        ),
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
@@ -179,12 +190,25 @@ function Calendar({
   );
 }
 
+/** Props that keep the calendar day data attribute stable in the configured DayPicker time zone. */
+type CalendarDayButtonProps = React.ComponentProps<typeof DayButton> & {
+  timeZone?: string;
+};
+
+/**
+ * Renders one focus-managed calendar day and exposes its date for styling and browser assertions.
+ * @param props - DayPicker day state plus the calendar's deterministic time zone.
+ * @returns A themed day button with range and selection data attributes.
+ * @example
+ * <CalendarDayButton day={day} modifiers={modifiers} timeZone="Asia/Tokyo" />
+ */
 function CalendarDayButton({
   className,
   day,
   modifiers,
+  timeZone = "UTC",
   ...props
-}: React.ComponentProps<typeof DayButton>) {
+}: CalendarDayButtonProps) {
   const defaultClassNames = getDefaultClassNames();
 
   const ref = React.useRef<HTMLButtonElement>(null);
@@ -197,7 +221,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day.date.toLocaleDateString("en-CA", { timeZone })}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

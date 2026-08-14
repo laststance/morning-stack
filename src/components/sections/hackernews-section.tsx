@@ -88,11 +88,11 @@ interface HNListItemProps {
 }
 
 /**
- * A single Hacker News list item in Bloomberg data-dense style.
- *
- * Renders a compact row with rank number, title, domain hint, points,
- * comment count, and author. Hover reveals action buttons (bookmark,
- * share, hide). Uses glass-panel styling consistent with the design system.
+ * Renders one ranked Hacker News story with touch-visible actions and desktop hover actions without covering its headline.
+ * @param props - Persisted story, list rank, bookmark state, and optional personalization callbacks.
+ * @returns A compact HN row with engagement metadata and article actions.
+ * @example
+ * <HNListItem article={article} rank={1} isBookmarked={false} />
  */
 function HNListItem({
   article,
@@ -121,7 +121,7 @@ function HNListItem({
   return (
     <article
       className={cn(
-        "group relative flex items-start gap-3 rounded-md px-3 py-2.5",
+        "group relative flex items-start gap-3 rounded-md px-3 pt-14 pb-2.5 lg:py-2.5",
         "border border-transparent bg-transparent",
         "transition-all duration-150",
         "hover:border-ms-border/50 hover:bg-ms-bg-secondary hover:shadow-sm",
@@ -189,11 +189,11 @@ function HNListItem({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Mobile reserves a top row for touch; desktop overlays compact actions on hover or focus. */}
       <div
         className={cn(
-          "absolute top-2 right-2 flex gap-1",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "absolute top-2 right-2 z-10 flex gap-0.5 opacity-100 transition-opacity",
+          "lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
@@ -204,7 +204,7 @@ function HNListItem({
             onBookmark?.(article);
           }}
           className={cn(
-            "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
@@ -238,7 +238,7 @@ function HNListItem({
               disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label={

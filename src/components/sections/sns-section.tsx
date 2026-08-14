@@ -189,7 +189,7 @@ function YouTubeCard({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Shared action row remains reachable by touch and collapses to hover treatment on desktop. */}
       <ActionButtons
         article={article}
         isBookmarked={isBookmarked}
@@ -297,7 +297,7 @@ function BlueskyCard({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Shared action row remains reachable by touch and collapses to hover treatment on desktop. */}
       <ActionButtons
         article={article}
         isBookmarked={isBookmarked}
@@ -317,7 +317,13 @@ interface ActionButtonsProps {
   onHide?: (action: HideAction) => void;
 }
 
-/** Hover-visible action buttons (bookmark, share, hide dropdown) shared by all SNS cards. */
+/**
+ * Renders touch-visible bookmark/share/hide controls that become compact desktop hover actions for SNS cards.
+ * @param props - Article, bookmark state, and optional personalization callbacks.
+ * @returns A responsive action row shared by Bluesky and YouTube cards.
+ * @example
+ * <ActionButtons article={article} isBookmarked={false} />
+ */
 function ActionButtons({
   article,
   isBookmarked,
@@ -339,8 +345,8 @@ function ActionButtons({
   return (
     <div
       className={cn(
-        "absolute top-2 right-2 flex gap-1",
-        "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+        "relative z-10 mr-1 mb-3 ml-auto flex w-fit gap-0.5 opacity-100 transition-opacity",
+        "lg:absolute lg:top-2 lg:right-2 lg:m-0 lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
       )}
     >
       <button
@@ -351,7 +357,7 @@ function ActionButtons({
           onBookmark?.(article);
         }}
         className={cn(
-          "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+          "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
           "hover:bg-ms-accent/90 hover:text-white",
           isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
         )}
@@ -385,7 +391,7 @@ function ActionButtons({
             disabled={!onHide}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+              "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
               "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
             )}
             aria-label={
@@ -459,7 +465,10 @@ export function SnsSection({
             <SectionHeader icon="🦋" title="Bluesky" />
             <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
               {blueskyArticles.slice(0, 3).map((article) => (
-                <div key={article.id} className="w-[72vw] shrink-0 sm:w-auto">
+                <div
+                  key={article.id}
+                  className="w-[calc(100vw-2rem)] shrink-0 sm:w-auto"
+                >
                   <BlueskyCard
                     article={article}
                     onBookmark={onBookmark}
@@ -478,7 +487,10 @@ export function SnsSection({
             <SectionHeader icon="🎬" title="YouTube" />
             <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
               {youtubeArticles.slice(0, 3).map((article) => (
-                <div key={article.id} className="w-[72vw] shrink-0 sm:w-auto">
+                <div
+                  key={article.id}
+                  className="w-[calc(100vw-2rem)] shrink-0 sm:w-auto"
+                >
                   <YouTubeCard
                     article={article}
                     onBookmark={onBookmark}

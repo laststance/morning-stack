@@ -64,10 +64,11 @@ export function EditionDateNavigator({
    * handleDateSelect(new Date("2030-01-14T12:00:00+09:00"))
    */
   const handleDateSelect = (selectedDate: Date | undefined): void => {
+    // Close even when DayPicker emits undefined after the already-selected day is pressed.
+    setIsCalendarOpen(false);
     if (!selectedDate || !navigation) return;
 
     const selectedCivilDate = calendarDateToCivilDate(selectedDate);
-    setIsCalendarOpen(false);
     navigation.navigate({
       control: "date",
       date: selectedCivilDate === today ? null : selectedCivilDate,
@@ -98,11 +99,7 @@ export function EditionDateNavigator({
           )}
         </Button>
 
-        <Popover
-          modal
-          open={isCalendarOpen}
-          onOpenChange={setIsCalendarOpen}
-        >
+        <Popover modal open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -137,6 +134,7 @@ export function EditionDateNavigator({
           >
             <Calendar
               mode="single"
+              required
               timeZone={EDITION_TIME_ZONE}
               selected={civilDateToCalendarDate(requestedDate)}
               defaultMonth={civilDateToCalendarDate(requestedDate)}

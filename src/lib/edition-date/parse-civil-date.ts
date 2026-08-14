@@ -20,9 +20,10 @@ export function parseCivilDate(value: string): CivilDateParts | null {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const roundTripDate = new Date(
-    Date.UTC(year, month - MONTH_INDEX_OFFSET, day),
-  );
+  const roundTripDate = new Date(0);
+  roundTripDate.setUTCHours(0, 0, 0, 0);
+  // setUTCFullYear preserves canonical years 0000-0099 instead of Date.UTC remapping them to 1900-1999.
+  roundTripDate.setUTCFullYear(year, month - MONTH_INDEX_OFFSET, day);
 
   // UTC round-tripping rejects dates that JavaScript would silently roll forward.
   if (

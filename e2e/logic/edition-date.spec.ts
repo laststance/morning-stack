@@ -21,6 +21,17 @@ test("strict civil dates reject malformed and impossible calendar values", () =>
   ]);
 });
 
+test("strict civil dates preserve canonical years below one hundred", () => {
+  // Arrange
+  const canonicalEarlyDate = "0004-02-29";
+
+  // Act
+  const parsedDate = parseCivilDate(canonicalEarlyDate);
+
+  // Assert
+  expect(parsedDate).toEqual({ year: 4, month: 2, day: 29 });
+});
+
 test("one-day navigation crosses month and leap-year boundaries without timezone drift", () => {
   // Arrange
   const leapDay = "2028-02-29";

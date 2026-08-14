@@ -75,13 +75,10 @@ export async function loadEditionContent(
       };
     }
 
-    const [requestedEdition, widgets] = await Promise.all([
-      dependencies.getEdition(
-        selection.requestedEditionType,
-        selection.requestedDate,
-      ),
-      dependencies.getWidgetData(),
-    ]);
+    const requestedEdition = await dependencies.getEdition(
+      selection.requestedEditionType,
+      selection.requestedDate,
+    );
     const edition =
       requestedEdition ??
       (selection.allowLatestFallback
@@ -89,6 +86,11 @@ export async function loadEditionContent(
         : null);
 
     if (!edition) return getMissingResult(selection);
+
+    const widgets = await dependencies.getWidgetData().catch(() => {
+      console.error("[HomePage] Optional widget data unavailable");
+      return null;
+    });
 
     return {
       status: "found",
@@ -98,8 +100,8 @@ export async function loadEditionContent(
       widgets,
       isLatestFallback: edition.id !== requestedEdition?.id,
     };
-  } catch (error) {
-    console.error("[HomePage] Required edition data unavailable:", error);
+  } catch {
+    console.error("[HomePage] Required edition data unavailable");
     return {
       status: "unavailable",
       requestedDate: selection.requestedDate,

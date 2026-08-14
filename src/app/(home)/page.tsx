@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getBookmarkedArticleIdsByUserId } from "@/app/actions/bookmarks";
-import { getHiddenStateByUserId } from "@/app/actions/hidden";
 import { EditionDateNavigator } from "@/components/edition-date/edition-date-navigator";
 import {
   HomeWarnings,
@@ -22,6 +21,7 @@ import { getArchiveBoundaryRedirectHref } from "@/lib/edition-navigation/get-arc
 import { resolveHomeSearchParams } from "@/lib/edition-navigation/resolve-home-search-params";
 import type { HomeSearchParams } from "@/lib/edition-navigation/resolved-home-selection";
 import { filterEditionData } from "@/lib/personalization/filter-edition-data";
+import { getHiddenStateByUserId } from "@/lib/personalization/get-hidden-state-by-user-id";
 import { loadPersonalization } from "@/lib/personalization/load-personalization";
 import {
   getEarliestPublishedEditionDate,
@@ -222,14 +222,12 @@ function renderFoundEdition(
     return <HomeContent mode="historical" {...sharedProps} />;
   }
 
-  // Current found content always carries widget data because the loader treats widget failure as unavailable.
-  if (!content.widgets) return <UnavailableEditionState />;
-
+  // Optional widgets may be absent while the persisted current edition remains readable.
   return (
     <HomeContent
       mode="current"
-      weather={content.widgets.weather}
-      stocks={content.widgets.stocks}
+      weather={content.widgets?.weather ?? null}
+      stocks={content.widgets?.stocks ?? []}
       {...sharedProps}
     />
   );

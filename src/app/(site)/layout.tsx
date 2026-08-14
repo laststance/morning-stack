@@ -17,8 +17,8 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }) {
   // Public site pages stay readable when optional personalization is unavailable.
-  const session = await auth().catch((error: unknown) => {
-    console.error("[SiteLayout] Session unavailable:", error);
+  const session = await auth().catch(() => {
+    console.error("[SiteLayout] Session unavailable");
     return null;
   });
 

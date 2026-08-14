@@ -59,8 +59,11 @@ interface PRCardProps {
 }
 
 /**
- * Pull request card with repo badge, PR number, title, author,
- * diff stats, labels, and state badge.
+ * Renders a pull-request summary with always-available touch actions and compact hover actions on desktop.
+ * @param props - Persisted PR metadata, bookmark state, and optional personalization callbacks.
+ * @returns A data-dense PR card with repository, status, labels, diff, and article actions.
+ * @example
+ * <PRCard article={article} isBookmarked={false} />
  */
 function PRCard({
   article,
@@ -194,11 +197,11 @@ function PRCard({
         )}
       </div>
 
-      {/* Hover action buttons */}
+      {/* Touch devices keep actions in flow; desktop reveals the compact row on hover or focus. */}
       <div
         className={cn(
-          "absolute top-2 right-2 flex gap-1",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "relative z-10 ml-auto flex w-fit gap-0.5 opacity-100 transition-opacity",
+          "lg:absolute lg:top-2 lg:right-2 lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
@@ -209,7 +212,7 @@ function PRCard({
             onBookmark?.(article);
           }}
           className={cn(
-            "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
@@ -242,7 +245,7 @@ function PRCard({
               disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "glass-subtle flex size-7 items-center justify-center rounded-md transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
               aria-label={

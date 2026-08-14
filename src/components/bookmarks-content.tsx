@@ -1,27 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import type { PersistedArticle } from "@/types/article";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
   initializeBookmarks,
+  restoreBookmark,
   toggleBookmark,
-  revertBookmark,
 } from "@/lib/features/bookmarks-slice";
+import {
+  createBookmarkRemovalRequest,
+  createOptimisticBookmarkRemovalState,
+  optimisticBookmarkRemovalReducer,
+  runBookmarkRemovalRequest,
+} from "@/lib/bookmarks/optimistic-removal-state";
 import { removeBookmark } from "@/app/actions/bookmarks";
 import { ArticleCard } from "@/components/cards/article-card";
 
 export interface BookmarksContentProps {
   /** Bookmarked articles sorted by most recently saved. */
   articles: PersistedArticle[];
-}
-
-interface OptimisticRemovalState {
-  /** Server article-array identity that owns these optimistic removals. */
-  articleSnapshot: PersistedArticle[];
-  /** Article IDs hidden only while their removal action is pending. */
-  removedIds: Set<string>;
 }
 
 /**
@@ -38,22 +37,40 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
     (state) => state.bookmarks.bookmarkedIds,
   );
 
-  const [optimisticRemoval, setOptimisticRemoval] =
-    useState<OptimisticRemovalState>({
+  const [optimisticRemoval, dispatchOptimisticRemoval] = useReducer(
+    optimisticBookmarkRemovalReducer,
+    articles,
+    createOptimisticBookmarkRemovalState,
+  );
+
+  // React immediately restarts this render so children never observe removals from an older server snapshot.
+  if (optimisticRemoval.articleSnapshot !== articles) {
+    dispatchOptimisticRemoval({
+      type: "replace-snapshot",
       articleSnapshot: articles,
-      removedIds: new Set(),
     });
+  }
 
   // Every server refresh is authoritative, including an empty bookmark list.
   useEffect(() => {
     dispatch(initializeBookmarks(articles.map((article) => article.id)));
   }, [dispatch, articles]);
 
-  // A new server snapshot invalidates removals owned by the previous render without another effect.
-  const removedIds =
-    optimisticRemoval.articleSnapshot === articles
-      ? optimisticRemoval.removedIds
-      : new Set<string>();
+  // The reducer emits rollback IDs; this Effect synchronizes the external Redux store idempotently.
+  useEffect(() => {
+    for (const articleId of optimisticRemoval.rollbackArticleIds) {
+      dispatch(restoreBookmark(articleId));
+    }
+  }, [dispatch, optimisticRemoval.rollbackArticleIds]);
+
+  const removedIds = useMemo(
+    () => new Set(optimisticRemoval.removedArticleIds),
+    [optimisticRemoval.removedArticleIds],
+  );
+  const rollbackArticleIds = useMemo(
+    () => new Set(optimisticRemoval.rollbackArticleIds),
+    [optimisticRemoval.rollbackArticleIds],
+  );
 
   const bookmarkedIdsSet = useMemo(
     () => new Set(bookmarkedIdsArray),
@@ -63,42 +80,28 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
   /** Handle un-bookmark with optimistic removal. */
   const handleBookmark = useCallback(
     async (article: PersistedArticle) => {
+      const request = createBookmarkRemovalRequest(
+        optimisticRemoval,
+        article.id,
+      );
+
       // On the bookmarks page, clicking always removes
+      dispatchOptimisticRemoval({ type: "start", request });
       dispatch(toggleBookmark(article.id));
-      setOptimisticRemoval((previousRemoval) => {
-        const previousIds =
-          previousRemoval.articleSnapshot === articles
-            ? previousRemoval.removedIds
-            : new Set<string>();
-        return {
-          articleSnapshot: articles,
-          removedIds: new Set(previousIds).add(article.id),
-        };
-      });
 
-      const result = await removeBookmark(article.id);
-
-      if (!result.success) {
-        // Revert on failure
-        dispatch(revertBookmark(article.id));
-        setOptimisticRemoval((previousRemoval) => {
-          const previousIds =
-            previousRemoval.articleSnapshot === articles
-              ? previousRemoval.removedIds
-              : new Set<string>();
-          const restoredRemovedIds = new Set(previousIds);
-          restoredRemovedIds.delete(article.id);
-          return {
-            articleSnapshot: articles,
-            removedIds: restoredRemovedIds,
-          };
-        });
-      } else {
-        // Refresh the page data from server after successful removal
-        router.refresh();
+      const didRemove = await runBookmarkRemovalRequest(() =>
+        removeBookmark(article.id),
+      );
+      if (!didRemove) {
+        dispatchOptimisticRemoval({ type: "fail", request });
+        return;
       }
+
+      dispatchOptimisticRemoval({ type: "succeed", request });
+      // Refresh the page data from server after successful removal.
+      router.refresh();
     },
-    [articles, dispatch, router],
+    [dispatch, optimisticRemoval, router],
   );
 
   // Filter out optimistically removed articles
@@ -128,7 +131,10 @@ export function BookmarksContent({ articles }: BookmarksContentProps) {
           key={article.id}
           article={article}
           onBookmark={handleBookmark}
-          isBookmarked={bookmarkedIdsSet.has(article.id)}
+          isBookmarked={
+            bookmarkedIdsSet.has(article.id) ||
+            rollbackArticleIds.has(article.id)
+          }
         />
       ))}
     </div>

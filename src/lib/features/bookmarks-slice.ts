@@ -48,9 +48,19 @@ const bookmarksSlice = createSlice({
         state.bookmarkedIds.splice(index, 1);
       }
     },
+    /** Idempotently restore a bookmark after a confirmed removal failure. */
+    restoreBookmark(state, action: PayloadAction<string>) {
+      if (!state.bookmarkedIds.includes(action.payload)) {
+        state.bookmarkedIds.push(action.payload);
+      }
+    },
   },
 });
 
-export const { initializeBookmarks, toggleBookmark, revertBookmark } =
-  bookmarksSlice.actions;
+export const {
+  initializeBookmarks,
+  toggleBookmark,
+  revertBookmark,
+  restoreBookmark,
+} = bookmarksSlice.actions;
 export default bookmarksSlice.reducer;

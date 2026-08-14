@@ -82,12 +82,18 @@ test("rejected bookmark removal requests produce the same rollback signal as uns
   const rejectedRequest = async (): Promise<{ success: boolean }> => {
     throw new Error("network unavailable");
   };
+  const unsuccessfulRequest = async (): Promise<{ success: boolean }> => ({
+    success: false,
+  });
 
   // Act
-  const didRemove = await runBookmarkRemovalRequest(rejectedRequest);
+  const rejectedDidRemove = await runBookmarkRemovalRequest(rejectedRequest);
+  const unsuccessfulDidRemove =
+    await runBookmarkRemovalRequest(unsuccessfulRequest);
 
   // Assert
-  expect(didRemove).toBe(false);
+  expect(rejectedDidRemove).toBe(false);
+  expect(unsuccessfulDidRemove).toBe(false);
 });
 
 test("restoring the same failed bookmark more than once never toggles it back off", () => {

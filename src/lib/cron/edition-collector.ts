@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { editions, articles } from "@/lib/db/schema";
+import { editions, articles, type EditionType } from "@/lib/db/schema";
 import type { Article, ArticleSource } from "@/types/article";
 import { fetchHackerNewsArticles } from "@/lib/sources/hackernews";
 import { fetchGitHubArticles } from "@/lib/sources/github";
@@ -16,9 +16,10 @@ import { fetchGitHubPRs } from "@/lib/sources/github-prs";
 import { fetchWeather } from "@/lib/sources/weather";
 import { fetchStockData } from "@/lib/sources/stocks";
 import { saveWidgetSnapshots } from "@/lib/widget-snapshots";
-
-/** Edition type produced by the twice-daily collector. */
-export type EditionType = "morning" | "evening";
+import {
+  tryAcquireEditionCollectionLock,
+  type EditionCollectionTransaction,
+} from "@/lib/cron/try-acquire-edition-collection-lock";
 
 /** Result of fetching from a single source. */
 interface SourceResult {
@@ -32,6 +33,11 @@ interface SourceResult {
 interface CollectRequestOptions {
   editionType?: EditionType;
 }
+
+/** Unique edition-row claim that prevents simultaneous collectors from writing the same date/type. */
+type WritableEditionClaim =
+  | { status: "writable"; id: string }
+  | { status: "conflict"; id: string };
 
 /** Maximum articles to keep per source in the edition. */
 const TOP_N_PER_SOURCE: Record<ArticleSource, number> = {
@@ -107,30 +113,26 @@ export async function handleCollectRequest(
       `[Cron] Starting ${editionType} edition collection for ${today}`,
     );
 
-    const existingEdition = await findExistingEdition(editionType, today);
-    if (existingEdition?.status === "published") {
+    const publishedEdition = await findPublishedEdition(editionType, today);
+    if (publishedEdition) {
       const { weatherData, stockData } = await fetchWidgetSources();
       const widgetResults = getWidgetSourceResults(weatherData, stockData);
       await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
 
       console.log(
-        `[Cron] ${editionType} edition for ${today} already published (${existingEdition.id}), skipping`,
+        `[Cron] ${editionType} edition for ${today} already published (${publishedEdition.id}), skipping`,
       );
       return NextResponse.json({
         status: "skipped",
         reason: "Edition already published",
-        editionId: existingEdition.id,
+        editionId: publishedEdition.id,
         editionType,
         date: today,
         widgets: widgetResults,
       });
     }
 
-    const edition = await getWritableDraftEdition(existingEdition, {
-      editionType,
-      today,
-    });
-
+    // Slow external requests complete before the lock-owning write transaction begins.
     const {
       allArticles,
       sourceResults: articleSourceResults,
@@ -138,47 +140,113 @@ export async function handleCollectRequest(
       stockData,
     } = await fetchAllSources();
     sourceResults.push(...articleSourceResults);
+    sourceResults.push(...getWidgetSourceResults(weatherData, stockData));
 
     if (allArticles.length === 0) {
-      throw new Error("No articles collected; leaving edition as draft");
+      const elapsed = Date.now() - startTime;
+      await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
+      console.warn(`[Cron] No articles collected after ${elapsed}ms, skipping`);
+      return NextResponse.json({
+        status: "skipped",
+        reason: "No articles collected",
+        editionType,
+        date: today,
+        sources: sourceResults,
+        elapsedMs: elapsed,
+      });
     }
 
-    await db.insert(articles).values(
-      allArticles.map((article) => ({
+    const response = await db.transaction(async (transaction) => {
+      const hasCollectionLock = await tryAcquireEditionCollectionLock(
+        transaction,
+        editionType,
+        today,
+      );
+      if (!hasCollectionLock) {
+        return NextResponse.json({
+          status: "skipped",
+          reason: "Edition collection already claimed",
+          editionType,
+          date: today,
+        });
+      }
+
+      const existingEdition = await findExistingEdition(
+        transaction,
+        editionType,
+        today,
+      );
+      if (existingEdition?.status === "published") {
+        const widgetResults = getWidgetSourceResults(weatherData, stockData);
+
+        console.log(
+          `[Cron] ${editionType} edition for ${today} already published (${existingEdition.id}), skipping`,
+        );
+        return NextResponse.json({
+          status: "skipped",
+          reason: "Edition already published",
+          editionId: existingEdition.id,
+          editionType,
+          date: today,
+          widgets: widgetResults,
+        });
+      }
+
+      const editionClaim = await getWritableDraftEdition(
+        transaction,
+        existingEdition,
+        { editionType, today },
+      );
+
+      // A unique-index conflict remains a final guard if a non-locking writer inserts the same edition.
+      if (editionClaim.status === "conflict") {
+        return NextResponse.json({
+          status: "skipped",
+          reason: "Edition collection already claimed",
+          editionId: editionClaim.id,
+          editionType,
+          date: today,
+        });
+      }
+
+      const edition = { id: editionClaim.id };
+      await transaction.insert(articles).values(
+        allArticles.map((article) => ({
+          editionId: edition.id,
+          source: article.source,
+          title: article.title,
+          url: article.url,
+          thumbnailUrl: article.thumbnailUrl ?? null,
+          excerpt: article.excerpt ?? null,
+          score: Math.round(article.score),
+          externalId: article.externalId,
+          metadata: article.metadata,
+        })),
+      );
+
+      await transaction
+        .update(editions)
+        .set({ status: "published", publishedAt: new Date() })
+        .where(eq(editions.id, edition.id));
+
+      const elapsed = Date.now() - startTime;
+      const summary = {
+        status: "success",
         editionId: edition.id,
-        source: article.source,
-        title: article.title,
-        url: article.url,
-        thumbnailUrl: article.thumbnailUrl ?? null,
-        excerpt: article.excerpt ?? null,
-        score: Math.round(article.score),
-        externalId: article.externalId,
-        metadata: article.metadata,
-      })),
-    );
+        editionType,
+        date: today,
+        articlesCollected: allArticles.length,
+        sources: sourceResults,
+        elapsedMs: elapsed,
+      };
 
-    sourceResults.push(...getWidgetSourceResults(weatherData, stockData));
+      console.log(`[Cron] Edition published in ${elapsed}ms:`, summary);
+      return NextResponse.json(summary);
+    });
+
+    // Best-effort widget persistence stays outside the edition lock and cannot roll back published articles.
     await saveWidgetSnapshots({ weather: weatherData, stocks: stockData });
-
-    await db
-      .update(editions)
-      .set({ status: "published", publishedAt: new Date() })
-      .where(eq(editions.id, edition.id));
-
-    const elapsed = Date.now() - startTime;
-    const summary = {
-      status: "success",
-      editionId: edition.id,
-      editionType,
-      date: today,
-      articlesCollected: allArticles.length,
-      sources: sourceResults,
-      elapsedMs: elapsed,
-    };
-
-    console.log(`[Cron] Edition published in ${elapsed}ms:`, summary);
-
-    return NextResponse.json(summary);
+    return response;
   } catch (error) {
     const elapsed = Date.now() - startTime;
     console.error(`[Cron] Collection failed after ${elapsed}ms:`, error);
@@ -196,6 +264,33 @@ export async function handleCollectRequest(
 }
 
 /**
+ * Finds an already-published target before external collection so idempotent cron reruns only refresh optional widgets.
+ * @param editionType - Morning or evening collection target.
+ * @param today - JST date string in YYYY-MM-DD format.
+ * @returns The published edition ID, or null when this run may collect articles.
+ * @example
+ * await findPublishedEdition("morning", "2026-06-16")
+ */
+async function findPublishedEdition(
+  editionType: EditionType,
+  today: string,
+): Promise<{ id: string } | null> {
+  const rows = await db
+    .select({ id: editions.id })
+    .from(editions)
+    .where(
+      and(
+        eq(editions.type, editionType),
+        eq(editions.date, today),
+        eq(editions.status, "published"),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
  * Check the optional CRON_SECRET header before data collection starts.
  * @param request - Incoming cron route request.
  * @returns Whether the request is allowed to run collection.
@@ -210,14 +305,19 @@ function isAuthorizedCronRequest(request: Request): boolean {
 
 /**
  * Find any existing edition for the date so failed drafts do not block retries.
+ * @param transaction - Lock-owning transaction used for all edition/article writes.
  * @param editionType - Morning or evening collection target.
  * @param today - JST date string in YYYY-MM-DD format.
  * @returns Existing edition row, preferring published rows when present.
  * @example
- * const edition = await findExistingEdition("morning", "2026-06-16");
+ * const edition = await findExistingEdition(transaction, "morning", "2026-06-16");
  */
-async function findExistingEdition(editionType: EditionType, today: string) {
-  const rows = await db
+async function findExistingEdition(
+  transaction: EditionCollectionTransaction,
+  editionType: EditionType,
+  today: string,
+) {
+  const rows = await transaction
     .select({
       id: editions.id,
       status: editions.status,
@@ -229,36 +329,58 @@ async function findExistingEdition(editionType: EditionType, today: string) {
 }
 
 /**
- * Reuse an unpublished edition or create a fresh draft before source fetches.
+ * Reuse an unpublished edition or create a fresh draft after source fetches have completed.
+ * @param transaction - Lock-owning transaction used for all edition/article writes.
  * @param existingEdition - Existing row for the target date, usually a stale draft.
  * @param input - Edition type and date used when creating a new draft.
- * @returns Writable draft edition ID.
+ * @returns Writable ownership for this run, or a conflict claim owned by a simultaneous collector.
  * @example
- * const draft = await getWritableDraftEdition(existing, { editionType, today });
+ * const draft = await getWritableDraftEdition(transaction, existing, { editionType, today });
  */
 async function getWritableDraftEdition(
+  transaction: EditionCollectionTransaction,
   existingEdition: { id: string; status: "draft" | "published" } | null,
   input: { editionType: EditionType; today: string },
-) {
+): Promise<WritableEditionClaim> {
   if (existingEdition) {
     // A previous failed run may have left partial articles attached to a draft.
-    await db.delete(articles).where(eq(articles.editionId, existingEdition.id));
+    await transaction
+      .delete(articles)
+      .where(eq(articles.editionId, existingEdition.id));
     console.log(`[Cron] Reusing draft edition: ${existingEdition.id}`);
-    return { id: existingEdition.id };
+    return { status: "writable", id: existingEdition.id };
   }
 
-  const [edition] = await db
+  const insertedEditions = await transaction
     .insert(editions)
     .values({
       type: input.editionType,
       date: input.today,
       status: "draft",
     })
+    .onConflictDoNothing({ target: [editions.type, editions.date] })
     .returning({ id: editions.id });
+  const insertedEdition = insertedEditions[0];
 
-  console.log(`[Cron] Created draft edition: ${edition.id}`);
+  if (insertedEdition) {
+    console.log(`[Cron] Created draft edition: ${insertedEdition.id}`);
+    return { status: "writable", id: insertedEdition.id };
+  }
 
-  return edition;
+  // Reload the winner after a unique conflict and skip without touching its draft/articles.
+  const conflictingEdition = await findExistingEdition(
+    transaction,
+    input.editionType,
+    input.today,
+  );
+  if (!conflictingEdition) {
+    throw new Error("Edition conflict occurred but no winning row was found");
+  }
+
+  console.log(
+    `[Cron] Concurrent edition claim detected: ${conflictingEdition.id}`,
+  );
+  return { status: "conflict", id: conflictingEdition.id };
 }
 
 /**

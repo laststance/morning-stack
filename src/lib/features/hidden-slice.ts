@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface HiddenState {
-  /** External IDs of individually hidden articles. */
+  /** Persisted article IDs individually hidden by the signed-in user. */
   hiddenArticleIds: string[];
   /** Source names hidden by the user (e.g. "hackernews"). */
   hiddenSources: string[];
@@ -44,7 +44,7 @@ const hiddenSlice = createSlice({
       state.initialized = true;
     },
 
-    /** Optimistically hide a single article by externalId. */
+    /** Optimistically hide a single persisted article. */
     hideArticle(state, action: PayloadAction<string>) {
       if (!state.hiddenArticleIds.includes(action.payload)) {
         state.hiddenArticleIds.push(action.payload);

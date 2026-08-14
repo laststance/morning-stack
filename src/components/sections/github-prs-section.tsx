@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
 import { SOURCE_LABELS } from "@/components/cards/article-card";
 import { ShareMenu } from "@/components/cards/share-menu";
-import type { Article, HideAction } from "@/types/article";
+import type { PersistedArticle, HideAction } from "@/types/article";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +21,12 @@ type PRTab = "open" | "merged";
 
 export interface GitHubPRsSectionProps {
   /** GitHub PR articles to display. */
-  articles: Article[];
+  articles: PersistedArticle[];
   /** Called when the user clicks the bookmark button. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option. */
   onHide?: (action: HideAction) => void;
-  /** Set of bookmarked article external IDs. */
+  /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
 }
 
@@ -52,15 +52,18 @@ function extractKeyword(title: string): string {
 // ─── PR Card ────────────────────────────────────────────────────────
 
 interface PRCardProps {
-  article: Article;
-  onBookmark?: (article: Article) => void;
+  article: PersistedArticle;
+  onBookmark?: (article: PersistedArticle) => void;
   onHide?: (action: HideAction) => void;
   isBookmarked?: boolean;
 }
 
 /**
- * Pull request card with repo badge, PR number, title, author,
- * diff stats, labels, and state badge.
+ * Renders a pull-request summary with always-available touch actions and compact hover actions on desktop.
+ * @param props - Persisted PR metadata, bookmark state, and optional personalization callbacks.
+ * @returns A data-dense PR card with repository, status, labels, diff, and article actions.
+ * @example
+ * <PRCard article={article} isBookmarked={false} />
  */
 function PRCard({
   article,
@@ -97,26 +100,29 @@ function PRCard({
         "glass-panel",
         "transition-all duration-200",
         "hover:-translate-y-0.5 hover:shadow-lg",
-        "focus-within:ring-2 focus-within:ring-ms-accent/50",
+        "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
     >
       {/* Top row: repo badge + PR number + state badge */}
       <div className="flex items-center gap-2">
         {/* Repo badge */}
-        <span className="inline-flex items-center gap-1.5 text-xs text-ms-text-secondary">
+        <span className="text-ms-text-secondary inline-flex items-center gap-1.5 text-xs">
           <span
-            className={cn("size-2 rounded-full", REPO_COLORS[repo] ?? "bg-gray-400")}
+            className={cn(
+              "size-2 rounded-full",
+              REPO_COLORS[repo] ?? "bg-gray-400",
+            )}
             aria-hidden="true"
           />
           <span className="font-medium">{repo}</span>
         </span>
 
         {/* PR number */}
-        <span className="font-mono text-xs text-ms-text-muted">#{number}</span>
+        <span className="text-ms-text-muted font-mono text-xs">#{number}</span>
 
         {/* Draft indicator */}
         {draft && (
-          <span className="rounded-sm bg-ms-bg-tertiary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ms-text-muted">
+          <span className="bg-ms-bg-tertiary text-ms-text-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium tracking-wider uppercase">
             Draft
           </span>
         )}
@@ -127,7 +133,7 @@ function PRCard({
         {/* State badge */}
         <span
           className={cn(
-            "rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+            "rounded-sm px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase",
             state === "open"
               ? "border border-emerald-500/50 text-emerald-400"
               : "bg-purple-500/20 text-purple-400",
@@ -138,11 +144,12 @@ function PRCard({
       </div>
 
       {/* Title */}
-      <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ms-text-primary">
+      <h3 className="text-ms-text-primary line-clamp-2 text-sm leading-snug font-medium">
         <a
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
+          data-article-headline
           className="outline-none after:absolute after:inset-0 focus-visible:underline"
         >
           {article.title}
@@ -168,8 +175,11 @@ function PRCard({
         {labels.slice(0, 3).map((label) => (
           <span
             key={label.name}
-            className="rounded-sm px-1.5 py-0.5 text-[10px] font-medium text-ms-text-secondary"
-            style={{ backgroundColor: `#${label.color}30`, color: `#${label.color}` }}
+            className="text-ms-text-secondary rounded-sm px-1.5 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: `#${label.color}30`,
+              color: `#${label.color}`,
+            }}
           >
             {label.name}
           </span>
@@ -181,34 +191,43 @@ function PRCard({
         {/* Diff stats */}
         {(additions > 0 || deletions > 0) && (
           <span className="font-mono text-xs">
-            <span className="text-ms-positive">+{additions}</span>
-            {" "}
+            <span className="text-ms-positive">+{additions}</span>{" "}
             <span className="text-ms-negative">-{deletions}</span>
           </span>
         )}
       </div>
 
-      {/* Hover action buttons */}
+      {/* Touch devices keep actions in flow; desktop reveals the compact row on hover or focus. */}
       <div
         className={cn(
-          "absolute right-2 top-2 flex gap-1",
-          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+          "relative z-10 ml-auto flex w-fit gap-0.5 opacity-100 transition-opacity",
+          "lg:absolute lg:top-2 lg:right-2 lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
           type="button"
+          disabled={!onBookmark}
           onClick={(e) => {
             e.stopPropagation();
             onBookmark?.(article);
           }}
           className={cn(
-            "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+          aria-label={
+            !onBookmark
+              ? "Bookmark status unavailable"
+              : isBookmarked
+                ? "Remove bookmark"
+                : "Bookmark"
+          }
         >
-          <Star className="size-3.5" fill={isBookmarked ? "currentColor" : "none"} />
+          <Star
+            className="size-3.5"
+            fill={isBookmarked ? "currentColor" : "none"}
+          />
         </button>
 
         <ShareMenu
@@ -223,28 +242,31 @@ function PRCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex size-7 items-center justify-center rounded-md glass-subtle transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
-              aria-label="Hide options"
+              aria-label={
+                onHide ? "Hide options" : "Hidden preferences unavailable"
+              }
             >
               <X className="size-3.5" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 bg-ms-bg-secondary border-ms-border"
+            className="bg-ms-bg-secondary border-ms-border w-56"
             onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenuItem
               onClick={() =>
-                onHide?.({ type: "article", targetId: article.externalId })
+                onHide?.({ type: "article", targetId: article.id })
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <EyeOff className="size-4 text-ms-text-muted" />
+              <EyeOff className="text-ms-text-muted size-4" />
               Hide this PR
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -253,16 +275,14 @@ function PRCard({
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Ban className="size-4 text-ms-text-muted" />
+              <Ban className="text-ms-text-muted size-4" />
               Hide from {sourceLabel}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "topic", targetId: keyword })
-              }
+              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >
-              <Tag className="size-4 text-ms-text-muted" />
+              <Tag className="text-ms-text-muted size-4" />
               Hide topic: {keyword}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -297,14 +317,11 @@ export function GitHubPRsSection({
   if (articles.length === 0) return null;
 
   return (
-    <section
-      aria-label="Pull Requests"
-      className="flex min-w-0 flex-col gap-3"
-    >
+    <section aria-label="Pull Requests" className="flex min-w-0 flex-col gap-3">
       <SectionHeader icon="🔀" title="Pull Requests" />
 
       {/* Tab switcher */}
-      <div className="flex gap-4 border-b border-ms-border" role="tablist">
+      <div className="border-ms-border flex gap-4 border-b" role="tablist">
         {(["open", "merged"] as const).map((tab) => (
           <button
             key={tab}
@@ -313,9 +330,9 @@ export function GitHubPRsSection({
             aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "pb-2 text-xs font-medium uppercase tracking-wider transition-colors",
+              "pb-2 text-xs font-medium tracking-wider uppercase transition-colors",
               activeTab === tab
-                ? "border-b-2 border-ms-accent text-ms-accent"
+                ? "border-ms-accent text-ms-accent border-b-2"
                 : "text-ms-text-muted hover:text-ms-text-secondary",
             )}
           >
@@ -329,15 +346,15 @@ export function GitHubPRsSection({
         {filteredArticles.length > 0 ? (
           filteredArticles.map((article) => (
             <PRCard
-              key={article.externalId}
+              key={article.id}
               article={article}
               onBookmark={onBookmark}
               onHide={onHide}
-              isBookmarked={bookmarkedIds.has(article.externalId)}
+              isBookmarked={bookmarkedIds.has(article.id)}
             />
           ))
         ) : (
-          <p className="py-4 text-center text-xs text-ms-text-muted">
+          <p className="text-ms-text-muted py-4 text-center text-xs">
             No {activeTab} pull requests
           </p>
         )}

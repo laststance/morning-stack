@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { ArticleCard } from "@/components/cards/article-card";
 import { SectionHeader } from "@/components/sections/section-header";
-import type { Article, HideAction } from "@/types/article";
+import type { PersistedArticle, HideAction } from "@/types/article";
 
 export interface ContentSectionProps {
   /** Emoji or icon for the section header. */
@@ -11,14 +11,14 @@ export interface ContentSectionProps {
   /** Section title text. */
   title: string;
   /** Articles to display in this section (max 5). */
-  articles: Article[];
+  articles: PersistedArticle[];
   /** Optional "View All" link URL. */
   viewAllHref?: string;
   /** Called when the user clicks the bookmark button on any article. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option from the dropdown. */
   onHide?: (action: HideAction) => void;
-  /** Set of bookmarked article external IDs. */
+  /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
   /** Extra CSS classes for the root element. */
   className?: string;
@@ -56,20 +56,17 @@ export function ContentSection({
       {/* Mobile: horizontal scroll  |  Tablet+: vertical stack */}
       <div
         className={cn(
-          "flex gap-4 overflow-x-auto pb-2 scrollbar-none",
+          "scrollbar-none flex gap-4 overflow-x-auto pb-2",
           "sm:flex-col sm:overflow-x-visible sm:pb-0",
         )}
       >
         {articles.slice(0, 5).map((article) => (
-          <div
-            key={article.externalId}
-            className="w-[68vw] shrink-0 sm:w-auto"
-          >
+          <div key={article.id} className="w-[68vw] shrink-0 sm:w-auto">
             <ArticleCard
               article={article}
               onBookmark={onBookmark}
               onHide={onHide}
-              isBookmarked={bookmarkedIds.has(article.externalId)}
+              isBookmarked={bookmarkedIds.has(article.id)}
             />
           </div>
         ))}

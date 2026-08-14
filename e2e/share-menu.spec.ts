@@ -88,7 +88,7 @@ test.describe("Share Menu", () => {
       await xBtn.click();
 
       const popup = await popupPromise;
-      expect(popup.url()).toContain("twitter.com/intent/tweet");
+      expect(popup.url()).toContain("x.com/intent/tweet");
     }
   });
 

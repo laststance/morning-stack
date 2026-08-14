@@ -110,7 +110,6 @@ export default async function LoginPage({
     </div>
   );
 }
-
 function GitHubIcon() {
   return (
     <svg

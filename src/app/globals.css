@@ -65,16 +65,16 @@
 
 /* PRD Design Tokens — light values in :root, dark overrides in .dark */
 :root {
-  --ms-bg-primary: oklch(0.98 0 0);      /* #FAFAFA */
-  --ms-bg-secondary: oklch(1 0 0);       /* #FFFFFF */
-  --ms-bg-tertiary: oklch(0.953 0 0);    /* #F0F0F0 */
-  --ms-text-primary: oklch(0.178 0 0);   /* #111111 */
+  --ms-bg-primary: oklch(0.98 0 0); /* #FAFAFA */
+  --ms-bg-secondary: oklch(1 0 0); /* #FFFFFF */
+  --ms-bg-tertiary: oklch(0.953 0 0); /* #F0F0F0 */
+  --ms-text-primary: oklch(0.178 0 0); /* #111111 */
   --ms-text-secondary: oklch(0.434 0 0); /* #555555 */
-  --ms-text-muted: oklch(0.593 0 0);     /* #808080 */
-  --ms-accent: oklch(0.705 0.193 39.231);/* #FF6B35 */
-  --ms-border: oklch(0.886 0 0);         /* #DDDDDD */
-  --ms-positive: oklch(0.55 0.15 155);   /* Green for light */
-  --ms-negative: oklch(0.5 0.2 25);      /* Red for light */
+  --ms-text-muted: oklch(0.593 0 0); /* #808080 */
+  --ms-accent: oklch(0.705 0.193 39.231); /* #FF6B35 */
+  --ms-border: oklch(0.886 0 0); /* #DDDDDD */
+  --ms-positive: oklch(0.55 0.15 155); /* Green for light */
+  --ms-negative: oklch(0.5 0.2 25); /* Red for light */
   --ms-glass-bg: oklch(1 0 0 / 0.7);
   --ms-glass-border: oklch(0.85 0 0 / 0.5);
   --ms-glass-highlight: oklch(1 0 0 / 0.1);
@@ -118,19 +118,19 @@
 
 /* Dark theme: MorningStack PRD palette — Bloomberg + Liquid Glass */
 .dark {
-  --ms-bg-primary: oklch(0.09 0 0);              /* Pure black */
-  --ms-bg-secondary: oklch(0.145 0.003 260);     /* Faint blue cast */
-  --ms-bg-tertiary: oklch(0.195 0.005 260);      /* Subtle elevation */
-  --ms-text-primary: oklch(0.97 0 0);            /* Off-white (eye comfort) */
-  --ms-text-secondary: oklch(0.706 0 0);         /* #A0A0A0 */
-  --ms-text-muted: oklch(0.51 0 0);              /* #666666 */
-  --ms-accent: oklch(0.705 0.193 39.231);        /* #FF6B35 */
-  --ms-border: oklch(0.28 0.005 260 / 0.5);      /* Semi-transparent */
-  --ms-positive: oklch(0.72 0.19 155);            /* Bloomberg green */
-  --ms-negative: oklch(0.62 0.22 25);             /* Bloomberg red */
-  --ms-glass-bg: oklch(0.15 0.005 260 / 0.55);   /* Glass panel background */
+  --ms-bg-primary: oklch(0.09 0 0); /* Pure black */
+  --ms-bg-secondary: oklch(0.145 0.003 260); /* Faint blue cast */
+  --ms-bg-tertiary: oklch(0.195 0.005 260); /* Subtle elevation */
+  --ms-text-primary: oklch(0.97 0 0); /* Off-white (eye comfort) */
+  --ms-text-secondary: oklch(0.706 0 0); /* #A0A0A0 */
+  --ms-text-muted: oklch(0.51 0 0); /* #666666 */
+  --ms-accent: oklch(0.705 0.193 39.231); /* #FF6B35 */
+  --ms-border: oklch(0.28 0.005 260 / 0.5); /* Semi-transparent */
+  --ms-positive: oklch(0.72 0.19 155); /* Bloomberg green */
+  --ms-negative: oklch(0.62 0.22 25); /* Bloomberg red */
+  --ms-glass-bg: oklch(0.15 0.005 260 / 0.55); /* Glass panel background */
   --ms-glass-border: oklch(0.35 0.01 260 / 0.4); /* Glass panel border */
-  --ms-glass-highlight: oklch(1 0 0 / 0.06);     /* Specular highlight */
+  --ms-glass-highlight: oklch(1 0 0 / 0.06); /* Specular highlight */
   --background: oklch(0.09 0 0);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.145 0.003 260);
@@ -171,6 +171,22 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Preserve reading progress without weakening the orange hover/focus affordance. */
+[data-article-headline] {
+  color: var(--ms-text-primary);
+}
+
+[data-article-headline]:visited {
+  color: var(--ms-text-secondary);
+}
+
+[data-article-headline]:hover,
+[data-article-headline]:focus-visible {
+  color: var(--ms-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 /* ── Glass utility classes ────────────────────────────────────────── */

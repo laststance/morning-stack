@@ -53,13 +53,10 @@ export interface ShareMenuProps {
 }
 
 /**
- * Expandable share menu for article cards.
- *
- * Default state: single share icon button.
- * Expanded state: X icon, Bluesky icon, Copy Link icon — animated
- * left-to-right with a spring-like width transition.
- *
- * Closes when clicking outside the menu.
+ * Renders the expandable share controls used by article cards, with touch-safe targets below the desktop breakpoint.
+ * @returns A share toggle that expands to X, Bluesky, and copy-link actions.
+ * @example
+ * <ShareMenu article={article} isExpanded={false} onToggle={handleToggle} />
  */
 export function ShareMenu({
   article,
@@ -72,8 +69,9 @@ export function ShareMenu({
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  const btnSize = size === "sm" ? "size-7" : "size-8";
-  const iconSize = size === "sm" ? "size-3.5" : "size-4";
+  const buttonSizeClassName =
+    size === "sm" ? "size-11 lg:size-7" : "size-11 lg:size-8";
+  const iconSizeClassName = size === "sm" ? "size-3.5" : "size-4";
 
   // ── Click-outside handler ──
   useEffect(() => {
@@ -151,21 +149,21 @@ export function ShareMenu({
   const buttonBase = cn(
     "flex items-center justify-center rounded-md backdrop-blur-sm transition-colors",
     "bg-ms-bg-primary/70 text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
-    btnSize,
+    buttonSizeClassName,
   );
 
   return (
     <div ref={containerRef} className={cn("flex gap-1", className)}>
       {/* Expanded share targets — animate in from right */}
       {isExpanded && (
-        <div className="flex animate-in slide-in-from-right-2 fade-in gap-1 duration-200">
+        <div className="animate-in slide-in-from-right-2 fade-in flex gap-1 duration-200">
           <button
             type="button"
             onClick={shareToX}
             className={buttonBase}
             aria-label="Share to X"
           >
-            <XIcon className={iconSize} />
+            <XIcon className={iconSizeClassName} />
           </button>
 
           <button
@@ -174,7 +172,7 @@ export function ShareMenu({
             className={buttonBase}
             aria-label="Share to Bluesky"
           >
-            <BlueskyIcon className={iconSize} />
+            <BlueskyIcon className={iconSizeClassName} />
           </button>
 
           <button
@@ -184,9 +182,9 @@ export function ShareMenu({
             aria-label={copied ? "Link copied" : "Copy link"}
           >
             {copied ? (
-              <Check className={iconSize} />
+              <Check className={iconSizeClassName} />
             ) : (
-              <Link2 className={iconSize} />
+              <Link2 className={iconSizeClassName} />
             )}
           </button>
         </div>
@@ -199,14 +197,11 @@ export function ShareMenu({
           e.stopPropagation();
           onToggle();
         }}
-        className={cn(
-          buttonBase,
-          isExpanded && "bg-ms-accent/90 text-white",
-        )}
+        className={cn(buttonBase, isExpanded && "bg-ms-accent/90 text-white")}
         aria-label={isExpanded ? "Close share menu" : "Share article"}
         aria-expanded={isExpanded}
       >
-        <Share2 className={iconSize} />
+        <Share2 className={iconSizeClassName} />
       </button>
     </div>
   );

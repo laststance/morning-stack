@@ -21,12 +21,11 @@ const DATA_SOURCES = [
   { name: "Bluesky", desc: "Trending discussions from the decentralized social network", icon: "🦋" },
   { name: "YouTube", desc: "Trending tech and science videos", icon: "🎬" },
   { name: "Product Hunt", desc: "Today's top product launches", icon: "🚀" },
-  { name: "World News", desc: "Global headlines beyond the tech bubble", icon: "🌍" },
 ] as const;
 
 const KEY_FEATURES = [
   { title: "Twice-Daily Editions", desc: "Morning and evening editions curated automatically so you never miss what matters." },
-  { title: "Multi-Source Aggregation", desc: "Nine data sources spanning code, community, social, video, and global news." },
+  { title: "Multi-Source Aggregation", desc: "Eight active platforms spanning code, community, social, video, and product launches." },
   { title: "Smart Scoring", desc: "Normalized engagement scores surface the most impactful stories across all sources." },
   { title: "Personalization", desc: "Bookmark articles, hide sources or topics, and tailor your feed over time." },
   { title: "Weather & Markets", desc: "At-a-glance weather and stock index widgets to start your day informed." },
@@ -36,8 +35,10 @@ const KEY_FEATURES = [
 // ─── Page Component ─────────────────────────────────────────────────
 
 /**
- * About page — product vision, key features, data sources, team placeholder, and CTA.
- * Purely static content, no database queries, no client-side JS needed.
+ * Renders the static product vision, active source list, team details, and primary CTA for `/about`.
+ * @returns The server-rendered About page without database or client-state dependencies.
+ * @example
+ * <AboutPage />
  */
 export default function AboutPage() {
   return (
@@ -83,7 +84,7 @@ export default function AboutPage() {
           Data Sources
         </h2>
         <p className="mt-2 text-center text-sm text-ms-text-secondary">
-          We aggregate content from nine platforms to give you the full picture.
+          We aggregate content from eight active platforms to give you the full picture.
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {DATA_SOURCES.map((s) => (

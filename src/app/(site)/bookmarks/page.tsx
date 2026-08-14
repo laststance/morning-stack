@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 /**
  * Bookmarks page — shows all saved articles for the authenticated user.
  *
- * Protected by auth middleware in `src/middleware.ts` — unauthenticated
+ * Protected by the auth boundary in `src/proxy.ts` — unauthenticated
  * users are redirected to /login before this page renders.
  */
 export default async function BookmarksPage() {
@@ -42,7 +42,6 @@ export default async function BookmarksPage() {
     </main>
   );
 }
-
 // ─── Async data component ───────────────────────────────────────────
 
 /** Fetches bookmarks server-side and passes to client component. */

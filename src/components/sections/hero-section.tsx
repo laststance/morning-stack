@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Star, X, EyeOff, Ban, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Article, HideAction } from "@/types/article";
+import type { PersistedArticle, HideAction } from "@/types/article";
 import {
   ArticleCard,
   SOURCE_COLORS,
@@ -60,12 +60,12 @@ function extractKeyword(title: string): string {
 
 export interface HeroSectionProps {
   /** All articles from the current edition. Sorted by score internally to pick top 4. */
-  articles: Article[];
+  articles: PersistedArticle[];
   /** Called when the user clicks the bookmark button on any article. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option from the dropdown. */
   onHide?: (action: HideAction) => void;
-  /** Set of bookmarked article external IDs. */
+  /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
 }
 
@@ -97,7 +97,7 @@ export function HeroSection({
         article={mainArticle}
         onBookmark={onBookmark}
         onHide={onHide}
-        isBookmarked={bookmarkedIds.has(mainArticle.externalId)}
+        isBookmarked={bookmarkedIds.has(mainArticle.id)}
       />
 
       {/* Sub-articles: 3-column grid below main card */}
@@ -105,11 +105,11 @@ export function HeroSection({
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {subArticles.map((article) => (
             <ArticleCard
-              key={article.externalId}
+              key={article.id}
               article={article}
               onBookmark={onBookmark}
               onHide={onHide}
-              isBookmarked={bookmarkedIds.has(article.externalId)}
+              isBookmarked={bookmarkedIds.has(article.id)}
             />
           ))}
         </div>
@@ -123,15 +123,17 @@ export function HeroSection({
 /* ------------------------------------------------------------------ */
 
 interface HeroMainCardProps {
-  article: Article;
-  onBookmark?: (article: Article) => void;
+  article: PersistedArticle;
+  onBookmark?: (article: PersistedArticle) => void;
   onHide?: (action: HideAction) => void;
   isBookmarked?: boolean;
 }
 
 /**
- * Large featured card for the primary hero article.
- * Shows a thumbnail when available, otherwise a text-first featured treatment.
+ * Renders the primary featured article with touch-visible actions and a compact desktop hover treatment.
+ * @returns The large hero card for the highest-scoring article.
+ * @example
+ * <HeroMainCard article={article} onBookmark={handleBookmark} />
  */
 function HeroMainCard({
   article,
@@ -254,6 +256,7 @@ function HeroMainCard({
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
+              data-article-headline
               className="outline-none focus-visible:underline"
             >
               {article.title}
@@ -269,25 +272,33 @@ function HeroMainCard({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Touch layouts keep actions visible; desktop reveals the compact row on hover or focus. */}
       <div
         className={cn(
-          "absolute top-3 right-3 flex gap-1",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "relative z-10 ml-auto flex w-fit gap-1 px-5 pb-5",
+          "opacity-100 transition-opacity lg:absolute lg:top-3 lg:right-3 lg:p-0 lg:opacity-0",
+          "lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
           type="button"
+          disabled={!onBookmark}
           onClick={(e) => {
             e.stopPropagation();
             onBookmark?.(article);
           }}
           className={cn(
-            "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
+          aria-label={
+            !onBookmark
+              ? "Bookmark status unavailable"
+              : isBookmarked
+                ? "Remove bookmark"
+                : "Bookmark article"
+          }
         >
           <Star
             className="size-4"
@@ -307,12 +318,15 @@ function HeroMainCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
-              aria-label="Hide options"
+              aria-label={
+                onHide ? "Hide options" : "Hidden preferences unavailable"
+              }
             >
               <X className="size-4" />
             </button>
@@ -324,7 +338,7 @@ function HeroMainCard({
           >
             <DropdownMenuItem
               onClick={() =>
-                onHide?.({ type: "article", targetId: article.externalId })
+                onHide?.({ type: "article", targetId: article.id })
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >

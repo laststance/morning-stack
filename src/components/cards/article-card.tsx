@@ -5,7 +5,11 @@ import { useCallback, useState } from "react";
 import { Star, X, EyeOff, Ban, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Article, ArticleSource, HideAction } from "@/types/article";
+import type {
+  PersistedArticle,
+  ArticleSource,
+  HideAction,
+} from "@/types/article";
 import { ShareMenu } from "@/components/cards/share-menu";
 import {
   DropdownMenu,
@@ -87,9 +91,9 @@ function extractKeyword(title: string): string {
 
 export interface ArticleCardProps {
   /** The article data to display. */
-  article: Article;
+  article: PersistedArticle;
   /** Called when the user clicks the bookmark button. */
-  onBookmark?: (article: Article) => void;
+  onBookmark?: (article: PersistedArticle) => void;
   /** Called when the user selects a hide option from the dropdown. */
   onHide?: (action: HideAction) => void;
   /** Whether this article is currently bookmarked. */
@@ -97,12 +101,10 @@ export interface ArticleCardProps {
 }
 
 /**
- * A reusable card component for displaying an article from any source.
- *
- * Renders an optional thumbnail, title, source badge, relative time,
- * engagement score, and hover-visible action buttons (bookmark, share, hide).
- * The hide button opens a dropdown with options to hide the article, source,
- * or topic.
+ * Renders a source-agnostic article card whose actions stay visible on touch layouts and compact on desktop hover.
+ * @returns An article card with bookmark, share, and hide controls.
+ * @example
+ * <ArticleCard article={article} onBookmark={handleBookmark} />
  */
 export function ArticleCard({
   article,
@@ -186,6 +188,7 @@ export function ArticleCard({
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
+            data-article-headline
             className="outline-none after:absolute after:inset-0 focus-visible:underline"
           >
             {article.title}
@@ -226,25 +229,33 @@ export function ArticleCard({
         </div>
       </div>
 
-      {/* Hover action buttons */}
+      {/* Touch layouts keep actions visible; desktop reveals the compact row on hover or focus. */}
       <div
         className={cn(
-          "absolute top-2 right-2 flex gap-1",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "relative z-10 ml-auto flex w-fit gap-1 px-3 pb-3",
+          "opacity-100 transition-opacity lg:absolute lg:top-2 lg:right-2 lg:p-0 lg:opacity-0",
+          "lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
       >
         <button
           type="button"
+          disabled={!onBookmark}
           onClick={(e) => {
             e.stopPropagation();
             onBookmark?.(article);
           }}
           className={cn(
-            "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
             "hover:bg-ms-accent/90 hover:text-white",
             isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
           )}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark article"}
+          aria-label={
+            !onBookmark
+              ? "Bookmark status unavailable"
+              : isBookmarked
+                ? "Remove bookmark"
+                : "Bookmark article"
+          }
         >
           <Star
             className="size-4"
@@ -264,12 +275,15 @@ export function ArticleCard({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              disabled={!onHide}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "glass-subtle flex size-8 items-center justify-center rounded-md transition-colors",
+                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
                 "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
               )}
-              aria-label="Hide options"
+              aria-label={
+                onHide ? "Hide options" : "Hidden preferences unavailable"
+              }
             >
               <X className="size-4" />
             </button>
@@ -281,7 +295,7 @@ export function ArticleCard({
           >
             <DropdownMenuItem
               onClick={() =>
-                onHide?.({ type: "article", targetId: article.externalId })
+                onHide?.({ type: "article", targetId: article.id })
               }
               className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
             >

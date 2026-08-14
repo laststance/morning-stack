@@ -16,6 +16,8 @@ MorningStack is a twice-daily tech briefing for developers. It collects high-sig
 - Public visitors can read the latest published Morning or Evening edition.
 - The home page chooses the current edition by Asia/Tokyo time: before 12:00 JST shows Morning, 12:00+ JST shows Evening.
 - If today's matching edition does not exist yet, the app falls back to the latest published edition.
+- Historical editions are addressable by `?date=YYYY-MM-DD&edition=morning|evening` and render persisted articles only, without live weather, stocks, or ticker data.
+- Dates earlier than the archive redirect to its earliest published date while preserving the requested Morning or Evening edition.
 - Signed-in users can bookmark articles, hide specific articles, hide entire sources, and hide topic keywords.
 - The Settings page lets signed-in users view account information, manage hidden items, choose display preferences, and sign out.
 - Auth is optional for reading. Public feed rendering should continue even if personalization is unavailable.
@@ -171,7 +173,7 @@ pnpm run test:e2e
 
 | Route | Access | Description |
 | --- | --- | --- |
-| `/` | Public | Latest Morning/Evening briefing with widgets and source sections. |
+| `/` | Public | Current or exact historical Morning/Evening briefing; live widgets appear only for the current view. |
 | `/about` | Public | Product overview. |
 | `/login` | Public | OAuth sign-in entry point or unavailable state when providers are not configured. |
 | `/bookmarks` | Signed in | Saved articles. |
@@ -182,7 +184,7 @@ pnpm run test:e2e
 
 ## Persistence Model
 
-- `editions`: one Morning/Evening edition per JST date and status.
+- `editions`: one unique Morning/Evening row per JST date, with draft or published status.
 - `articles`: normalized external content linked to an edition.
 - `users`, `accounts`, `sessions`, `verification_tokens`: Auth.js persistence.
 - `bookmarks`: user-to-article saved items.

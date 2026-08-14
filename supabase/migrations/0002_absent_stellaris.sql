@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "editions_type_date_idx" ON "editions" USING btree ("type","date");

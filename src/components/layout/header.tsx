@@ -7,50 +7,35 @@ import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { LogIn } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { setEditionType, type EditionType } from "@/lib/features/edition-slice";
+import type { EditionType } from "@/lib/db/schema";
 import { toggleSidebar, setSidebarOpen } from "@/lib/features/ui-slice";
+import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
+import { buildHomeHref } from "@/lib/edition-navigation/build-home-href";
+import { useHomeNavigation } from "@/components/home-navigation-provider";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 /** No-op subscribe for useSyncExternalStore — value never changes */
 const emptySubscribe = () => () => {};
 
 /**
- * Format the selected edition metadata for the compact header subtitle.
- * @param dateStr - Edition date in `YYYY-MM-DD` format.
- * @param editionType - Selected edition type from Redux.
- * @returns Human-readable date and edition label.
+ * Renders global app controls and server-confirmed Home edition tabs, using the shared transition when the home route supplies selection props.
+ * @param props - Optional Home request state; site routes use their standard non-home Header behavior.
+ * @returns Responsive Header with edition, account, theme, bookmark, and settings controls.
  * @example
- * formatEditionDate("2026-06-17", "morning") // => "Jun 17, 2026 - Morning Edition"
+ * <Header requestedDate="2030-01-14" requestedEditionType="morning" isHistoricalSelection />
  */
-function formatEditionDate(dateStr: string, editionType: EditionType): string {
-  const date = new Date(dateStr + "T00:00:00");
-  const formatted = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const label =
-    editionType === "morning" ? "Morning Edition" : "Evening Edition";
-  return `${formatted} - ${label}`;
-}
-
-/**
- * Build the home URL that makes App Router refetch the selected edition.
- * @param editionType - The edition chosen from desktop or mobile tabs.
- * @returns A root URL with the edition search parameter.
- * @example
- * getEditionHref("morning") // => "/?edition=morning"
- */
-function getEditionHref(editionType: EditionType): `/?edition=${EditionType}` {
-  return `/?edition=${editionType}`;
-}
-
-/**
- * App header with edition tabs, auth controls, and mobile hamburger menu.
- * Client Component — uses Redux for edition state and next-auth/react for session.
- */
-export function Header() {
+export function Header({
+  requestedDate,
+  requestedEditionType,
+  isHistoricalSelection = false,
+}: {
+  requestedDate?: string;
+  requestedEditionType?: EditionType;
+  isHistoricalSelection?: boolean;
+} = {}) {
   const router = useRouter();
+  const homeNavigation = useHomeNavigation();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
   const mounted = useSyncExternalStore(
@@ -59,9 +44,11 @@ export function Header() {
     () => false,
   );
   const dispatch = useAppDispatch();
-  const editionType = useAppSelector((s) => s.edition.type);
-  const editionDate = useAppSelector((s) => s.edition.date);
-  const sidebarOpen = useAppSelector((s) => s.ui.sidebarOpen);
+  const storedEditionType = useAppSelector((state) => state.edition.type);
+  const storedEditionDate = useAppSelector((state) => state.edition.date);
+  const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
+  const editionType = requestedEditionType ?? storedEditionType;
+  const editionDate = requestedDate ?? storedEditionDate;
 
   const tabs: { type: EditionType; label: string; icon: string }[] = [
     { type: "morning", label: "Morning", icon: "☀️" },
@@ -70,11 +57,17 @@ export function Header() {
 
   const handleEditionSelect = useCallback(
     (selectedEditionType: EditionType) => {
-      // Keep the tab responsive while the URL navigation fetches matching data.
-      dispatch(setEditionType(selectedEditionType));
-      router.push(getEditionHref(selectedEditionType));
+      if (homeNavigation) {
+        homeNavigation.navigate({
+          control: selectedEditionType,
+          editionType: selectedEditionType,
+        });
+        return;
+      }
+
+      router.push(buildHomeHref(null, selectedEditionType));
     },
-    [dispatch, router],
+    [homeNavigation, router],
   );
 
   return (
@@ -100,6 +93,7 @@ export function Header() {
                 key={tab.type}
                 role="tab"
                 aria-selected={editionType === tab.type}
+                disabled={homeNavigation?.isPending}
                 className={`relative cursor-pointer px-3 pt-1 pb-1.5 text-xs font-medium uppercase transition-colors ${
                   editionType === tab.type
                     ? "text-ms-accent"
@@ -107,7 +101,13 @@ export function Header() {
                 }`}
                 onClick={() => handleEditionSelect(tab.type)}
               >
-                <span aria-hidden="true">{tab.icon}</span> {tab.label}
+                {homeNavigation?.isPending &&
+                homeNavigation.activeControl === tab.type ? (
+                  <Spinner aria-label={`Loading ${tab.label} edition`} />
+                ) : (
+                  <span aria-hidden="true">{tab.icon}</span>
+                )}{" "}
+                {tab.label}
                 {/* Active tab underline */}
                 {editionType === tab.type && (
                   <span className="bg-ms-accent absolute inset-x-3 bottom-0 h-0.5 rounded-full" />
@@ -115,9 +115,14 @@ export function Header() {
               </button>
             ))}
           </div>
-          <span className="text-ms-text-muted text-xs leading-none">
-            {formatEditionDate(editionDate, editionType)}
-          </span>
+          {!isHistoricalSelection && (
+            <span className="text-ms-text-muted text-xs leading-none">
+              {formatEditionDate(editionDate)} -{" "}
+              {editionType === "morning"
+                ? "Morning Edition"
+                : "Evening Edition"}
+            </span>
+          )}
         </div>
 
         {/* Right: Icons + Auth (hidden on mobile) */}
@@ -231,6 +236,7 @@ export function Header() {
                 key={tab.type}
                 role="tab"
                 aria-selected={editionType === tab.type}
+                disabled={homeNavigation?.isPending}
                 className={`relative min-h-11 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   editionType === tab.type
                     ? "bg-ms-accent/10 text-ms-accent"
@@ -241,15 +247,26 @@ export function Header() {
                   dispatch(setSidebarOpen(false));
                 }}
               >
-                <span aria-hidden="true">{tab.icon}</span> {tab.label}
+                {homeNavigation?.isPending &&
+                homeNavigation.activeControl === tab.type ? (
+                  <Spinner aria-label={`Loading ${tab.label} edition`} />
+                ) : (
+                  <span aria-hidden="true">{tab.icon}</span>
+                )}{" "}
+                {tab.label}
               </button>
             ))}
           </div>
 
           {/* Edition date */}
-          <p className="text-ms-text-muted py-2 text-xs">
-            {formatEditionDate(editionDate, editionType)}
-          </p>
+          {!isHistoricalSelection && (
+            <p className="text-ms-text-muted py-2 text-xs">
+              {formatEditionDate(editionDate)} -{" "}
+              {editionType === "morning"
+                ? "Morning Edition"
+                : "Evening Edition"}
+            </p>
+          )}
 
           {/* Navigation links — 44px min-height for touch targets */}
           <div className="flex flex-col gap-1">

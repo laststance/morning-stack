@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hiddenItems } from "@/lib/db/schema";
+import { getHiddenStateByUserId } from "@/lib/personalization/get-hidden-state-by-user-id";
 
 /** Represents a single hidden-item record returned to the client. */
 export interface HiddenItem {
@@ -17,7 +18,7 @@ export interface HiddenItem {
  * Hide an item for the current user.
  *
  * Supports three target types:
- * - `article`: hides a single article by its `externalId`.
+ * - `article`: hides a single persisted article by its database ID.
  * - `source`: hides all articles from a given source (e.g. "hackernews").
  * - `topic`: hides articles matching a keyword/topic.
  *
@@ -132,31 +133,5 @@ export async function getHiddenState(): Promise<{
     return { hiddenArticleIds: [], hiddenSources: [], hiddenTopics: [] };
   }
 
-  const rows = await db
-    .select({
-      targetType: hiddenItems.targetType,
-      targetId: hiddenItems.targetId,
-    })
-    .from(hiddenItems)
-    .where(eq(hiddenItems.userId, session.user.id));
-
-  const hiddenArticleIds: string[] = [];
-  const hiddenSources: string[] = [];
-  const hiddenTopics: string[] = [];
-
-  for (const row of rows) {
-    switch (row.targetType) {
-      case "article":
-        hiddenArticleIds.push(row.targetId);
-        break;
-      case "source":
-        hiddenSources.push(row.targetId);
-        break;
-      case "topic":
-        hiddenTopics.push(row.targetId);
-        break;
-    }
-  }
-
-  return { hiddenArticleIds, hiddenSources, hiddenTopics };
+  return getHiddenStateByUserId(session.user.id);
 }

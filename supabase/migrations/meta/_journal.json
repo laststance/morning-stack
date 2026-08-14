@@ -15,6 +15,13 @@
       "when": 1770499568966,
       "tag": "0001_mushy_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786689686719,
+      "tag": "0002_absent_stellaris",
+      "breakpoints": true
     }
   ]
 }

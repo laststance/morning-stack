@@ -4,6 +4,7 @@ import path from "node:path";
 import postgres, { type Sql } from "postgres";
 
 import { db } from "@/lib/db";
+import { getWritableDraftEdition } from "@/lib/cron/edition-collector";
 import { tryAcquireEditionCollectionLock } from "@/lib/cron/try-acquire-edition-collection-lock";
 
 const EXPECTED_DATABASE_NAME = "morning_stack_e2e";
@@ -12,7 +13,7 @@ const MIGRATION_BREAKPOINT = "--> statement-breakpoint";
 const E2E_USER_ID = "e2e-user";
 const E2E_SESSION_TOKEN = "e2e-session-token";
 
-test("database setup produces one deterministic archive and one claim per edition", async () => {
+test("database setup collects without the edition index and preserves one claim per edition", async () => {
   // Arrange
   const databaseUrl = getRequiredE2eDatabaseUrl();
   const sql = postgres(databaseUrl, {
@@ -24,6 +25,7 @@ test("database setup produces one deterministic archive and one claim per editio
   try {
     // Act
     await rebuildDatabase(sql);
+    const missingIndexClaim = await claimEditionWithoutUniqueIndex(sql);
     await seedArchive(sql);
     const concurrentClaims = await Promise.all([
       claimEdition(sql, "2030-01-20"),
@@ -42,6 +44,7 @@ test("database setup produces one deterministic archive and one claim per editio
     `;
 
     // Assert
+    expect(missingIndexClaim).toEqual({ status: "writable", rowCount: 1 });
     expect(concurrentClaims.flat()).toHaveLength(1);
     expect(existingDraftCollectorClaims).toEqual([true, false]);
     expect(repeatedExternalIdArticles).toEqual([
@@ -81,6 +84,47 @@ function getRequiredE2eDatabaseUrl(): string {
   }
 
   return databaseUrl;
+}
+
+/**
+ * Removes the production-missing index long enough to prove the real collector can create one draft, then restores the fixture schema.
+ * @param sql - Dedicated PostgreSQL client for index setup, verification, and cleanup.
+ * @returns Collector status plus the exact number of inserted target editions.
+ * @example
+ * await claimEditionWithoutUniqueIndex(sql)
+ */
+async function claimEditionWithoutUniqueIndex(
+  sql: Sql,
+): Promise<{ status: "writable" | "conflict"; rowCount: number }> {
+  await sql.unsafe('drop index "editions_type_date_idx"');
+
+  try {
+    const claim = await db.transaction(async (transaction) => {
+      const hasLock = await tryAcquireEditionCollectionLock(
+        transaction,
+        "morning",
+        "2030-01-19",
+      );
+      if (!hasLock) throw new Error("Expected the isolated collector lock");
+
+      return getWritableDraftEdition(transaction, null, {
+        editionType: "morning",
+        today: "2030-01-19",
+      });
+    });
+    const [editionCount] = await sql<Array<{ rowCount: number }>>`
+      select count(*)::integer as "rowCount"
+      from editions
+      where type = 'morning' and date = '2030-01-19'
+    `;
+
+    return { status: claim.status, rowCount: editionCount?.rowCount ?? 0 };
+  } finally {
+    await sql`delete from editions where type = 'morning' and date = '2030-01-19'`;
+    await sql.unsafe(
+      'create unique index "editions_type_date_idx" on "editions" using btree ("type", "date")',
+    );
+  }
 }
 
 /**
@@ -271,11 +315,7 @@ async function claimExistingDraftCollectionLockConcurrently(): Promise<
   let secondClaim = false;
   try {
     secondClaim = await db.transaction((transaction) =>
-      tryAcquireEditionCollectionLock(
-        transaction,
-        "morning",
-        "2030-01-20",
-      ),
+      tryAcquireEditionCollectionLock(transaction, "morning", "2030-01-20"),
     );
   } finally {
     releaseFirstCollector();

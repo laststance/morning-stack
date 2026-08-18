@@ -329,7 +329,7 @@ async function findExistingEdition(
 }
 
 /**
- * Reuse an unpublished edition or create a fresh draft after source fetches have completed.
+ * Reuse an unpublished edition or create a draft after source fetches when `handleCollectRequest` owns the collection lock.
  * @param transaction - Lock-owning transaction used for all edition/article writes.
  * @param existingEdition - Existing row for the target date, usually a stale draft.
  * @param input - Edition type and date used when creating a new draft.
@@ -337,7 +337,7 @@ async function findExistingEdition(
  * @example
  * const draft = await getWritableDraftEdition(transaction, existing, { editionType, today });
  */
-async function getWritableDraftEdition(
+export async function getWritableDraftEdition(
   transaction: EditionCollectionTransaction,
   existingEdition: { id: string; status: "draft" | "published" } | null,
   input: { editionType: EditionType; today: string },
@@ -358,7 +358,8 @@ async function getWritableDraftEdition(
       date: input.today,
       status: "draft",
     })
-    .onConflictDoNothing({ target: [editions.type, editions.date] })
+    // A targetless conflict clause works both before and after the edition index reaches the database.
+    .onConflictDoNothing()
     .returning({ id: editions.id });
   const insertedEdition = insertedEditions[0];
 

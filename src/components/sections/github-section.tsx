@@ -50,6 +50,7 @@ export function GitHubSection({
             article={article}
             presentation="media-three-column"
             showExcerpt
+            imageLoading="eager"
             onBookmark={onBookmark}
             onHide={onHide}
             isBookmarked={bookmarkedIds.has(article.id)}

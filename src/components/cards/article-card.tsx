@@ -65,6 +65,8 @@ export interface ArticleCardProps {
   presentation?: ArticleCardPresentation;
   /** Shows the stored article description when the parent promotes this card. */
   showExcerpt?: boolean;
+  /** Overrides media loading only when the parent knows the card is the initial viewport's LCP candidate. */
+  imageLoading?: "eager" | "lazy";
 }
 
 /**
@@ -81,6 +83,7 @@ export function ArticleCard({
   isBookmarked = false,
   presentation = "standard",
   showExcerpt = false,
+  imageLoading = "lazy",
 }: ArticleCardProps) {
   const [imgError, setImgError] = useState(false);
 
@@ -130,6 +133,7 @@ export function ArticleCard({
             alt=""
             fill
             sizes={ARTICLE_IMAGE_SIZES[presentation]}
+            loading={imageLoading}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             onError={() => setImgError(true)}
           />

@@ -43,7 +43,7 @@ export function GitHubSection({
       <SectionHeader title="GitHub Trending" />
 
       {/* Repository descriptions earn the larger first row; overflow becomes dense headline rows. */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {featuredArticles.map((article) => (
           <ArticleCard
             key={article.id}

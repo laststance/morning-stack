@@ -99,8 +99,18 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
       name: "GitHub Trending",
     });
     const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
+    const youtubeRail = page.locator('[data-layout="video-rail"]');
     const githubBox = await githubBand.boundingBox();
     const hatenaBox = await hatenaBand.boundingBox();
+    const githubColumns = await githubBand
+      .locator("div.grid")
+      .first()
+      .evaluate((grid) =>
+        getComputedStyle(grid).gridTemplateColumns.split(" "),
+      );
+    const youtubeColumns = await youtubeRail.evaluate((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.split(" "),
+    );
 
     // Assert
     expect(githubBox).not.toBeNull();
@@ -110,6 +120,8 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     expect(hatenaBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
+    expect(githubColumns).toHaveLength(3);
+    expect(youtubeColumns).toHaveLength(3);
   });
 });
 

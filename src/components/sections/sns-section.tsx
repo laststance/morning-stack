@@ -322,7 +322,7 @@ export function SnsSection({
         {hasBluesky && (
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader title="Bluesky" />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {blueskyArticles.slice(0, 3).map((article) => (
                 <div key={article.id}>
                   <BlueskyCard
@@ -342,7 +342,7 @@ export function SnsSection({
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader title="YouTube" />
             <div
-              className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3"
+              className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 md:grid-cols-3"
               data-layout="video-rail"
             >
               {youtubeArticles.slice(0, 3).map((article) => (

@@ -24,7 +24,7 @@ export default function HomeLoading() {
           aria-label="Loading GitHub Trending"
         >
           <Skeleton className="h-6 w-40" />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }, (_, index) => (
               <Skeleton key={index} className="aspect-[4/3] w-full" />
             ))}

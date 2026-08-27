@@ -18,6 +18,9 @@ MorningStack is a twice-daily tech briefing for developers. It collects high-sig
 - If today's matching edition does not exist yet, the app falls back to the latest published edition.
 - Historical editions are addressable by `?date=YYYY-MM-DD&edition=morning|evening` and render persisted articles only, without live weather, stocks, or ticker data.
 - Dates earlier than the archive redirect to its earliest published date while preserving the requested Morning or Evening edition.
+- Each edition follows one 1240px editorial flow: lead story, GitHub repositories, current-only widgets, supporting headlines, then independent source bands.
+- Source bands use content-aware layouts: GitHub leads with up to three descriptive repository cards, Hatena leads with up to two visual stories, Hacker News keeps a ranked list, and YouTube uses a swipeable video rail on mobile.
+- Stories promoted into the lead area appear only once, empty sources collapse without blank columns, and article actions stay consistent across every story type.
 - Signed-in users can bookmark articles, hide specific articles, hide entire sources, and hide topic keywords.
 - The Settings page lets signed-in users view account information, manage hidden items, choose display preferences, and sign out.
 - Auth is optional for reading. Public feed rendering should continue even if personalization is unavailable.
@@ -190,3 +193,10 @@ pnpm run test:e2e
 - `bookmarks`: user-to-article saved items.
 - `hidden_items`: user-specific article/source/topic filters.
 - `weather_cache`, `stock_cache`: widget cache tables, with Redis used for latest widget payloads.
+
+## Project Documentation
+
+- [Design system](./DESIGN.md) — current visual principles and responsive editorial rules.
+- [Backlog](./TODOS.md) — deferred product and design work.
+- [Original MVP PRD](./tasks/prd-morningstack-mvp.md) — historical product requirements from the first implementation.
+- [MVP progress log](./.ralph-tui/progress.md) — historical implementation notes and learnings.

@@ -7,6 +7,7 @@ import { ArticleActions } from "@/components/cards/article-actions";
 import { ArticleCard } from "@/components/cards/article-card";
 import {
   ARTICLE_IMAGE_SIZES,
+  SOURCE_BADGE_TEXT_COLORS,
   SOURCE_COLORS,
   SOURCE_LABELS,
 } from "@/components/cards/constants";
@@ -242,8 +243,9 @@ function HeroMainCard({
           <div className="text-ms-text-muted flex items-center gap-2 text-xs">
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
+                "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
                 SOURCE_COLORS[article.source],
+                SOURCE_BADGE_TEXT_COLORS[article.source],
               )}
             >
               {sourceLabel}

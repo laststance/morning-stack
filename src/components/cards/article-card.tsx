@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArticleActions } from "@/components/cards/article-actions";
 import {
   ARTICLE_IMAGE_SIZES,
+  SOURCE_BADGE_TEXT_COLORS,
   SOURCE_COLORS,
   SOURCE_LABELS,
   type ArticleCardPresentation,
@@ -185,8 +186,9 @@ export function ArticleCard({
         <div className="text-ms-text-muted mt-auto flex items-center gap-2 text-xs">
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
+              "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
               SOURCE_COLORS[article.source],
+              SOURCE_BADGE_TEXT_COLORS[article.source],
             )}
           >
             {sourceLabel}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, Heart, Play, Repeat2 } from "lucide-react";
 
 import { ArticleActions } from "@/components/cards/article-actions";
+import { SOURCE_BADGE_TEXT_COLORS } from "@/components/cards/constants";
 import { ARTICLE_IMAGE_SIZES } from "@/components/cards/constants";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
@@ -141,8 +142,9 @@ function YouTubeCard({
         <div className="text-ms-text-muted mt-auto flex items-center gap-2 text-xs">
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium text-white",
+              "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
               YOUTUBE_COLOR,
+              SOURCE_BADGE_TEXT_COLORS.youtube,
             )}
           >
             YouTube
@@ -240,8 +242,9 @@ function BlueskyCard({
           </div>
           <span
             className={cn(
-              "inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium text-white",
+              "inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium",
               BLUESKY_COLOR,
+              SOURCE_BADGE_TEXT_COLORS.bluesky,
             )}
           >
             Bluesky

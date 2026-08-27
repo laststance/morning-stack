@@ -160,7 +160,12 @@ export function ArticleCard({
         )}
       >
         {/* Title */}
-        <h3 className="text-ms-text-primary line-clamp-2 text-sm leading-snug font-medium">
+        <h3
+          className={cn(
+            "text-ms-text-primary line-clamp-2 text-sm leading-snug font-medium",
+            excerpt && "text-base font-semibold",
+          )}
+        >
           <a
             href={article.url}
             target="_blank"
@@ -175,7 +180,7 @@ export function ArticleCard({
         {/* Promoted repository cards use their stored description to make the larger footprint informative. */}
         {excerpt && (
           <p
-            className="text-ms-text-secondary line-clamp-3 max-w-[65ch] text-base leading-relaxed"
+            className="text-ms-text-secondary line-clamp-3 max-w-[65ch] text-sm leading-relaxed"
             data-article-summary
           >
             {excerpt}

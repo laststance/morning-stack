@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { formatEditionContextLabel } from "@/components/edition-date/edition-date-navigator";
 import type { EditionData } from "@/lib/queries/edition";
 import { loadEditionContent } from "@/lib/queries/load-edition-content";
 import { loadEditionBounds } from "@/lib/queries/load-edition-bounds";
@@ -33,6 +34,12 @@ test("implicit current briefing labels an older latest edition without changing 
     widgets: { weather: null, stocks: [] },
     isLatestFallback: true,
   });
+  expect(
+    formatEditionContextLabel(result.requestedDate, "2030-01-15", {
+      date: LATEST_EDITION.date,
+      type: LATEST_EDITION.type,
+    }),
+  ).toBe("Latest available: Jan 14, 2030 Evening");
 });
 
 test("missing historical edition stays missing even when current-only widgets are unavailable", async () => {

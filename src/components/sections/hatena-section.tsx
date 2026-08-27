@@ -13,6 +13,8 @@ export interface HatenaSectionProps {
   onHide?: (action: HideAction) => void;
   /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
+  /** Original visible source positions retained when higher stories are promoted above this band. */
+  articleRanks?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -26,6 +28,7 @@ export function HatenaSection({
   onBookmark,
   onHide,
   bookmarkedIds = new Set(),
+  articleRanks,
 }: HatenaSectionProps) {
   if (articles.length === 0) return null;
 
@@ -64,9 +67,9 @@ export function HatenaSection({
             >
               <span
                 className="text-ms-text-muted pt-4 text-right font-mono text-xs tabular-nums"
-                aria-label={`Rank ${index + 3}`}
+                aria-label={`Rank ${articleRanks?.get(article.id) ?? index + 3}`}
               >
-                {index + 3}
+                {articleRanks?.get(article.id) ?? index + 3}
               </span>
               <ArticleCard
                 article={article}

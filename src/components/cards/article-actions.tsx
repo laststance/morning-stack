@@ -60,15 +60,20 @@ export function ArticleActions({
     toast.success("Copied!", { duration: 2000 });
   }, []);
 
+  const handleCopyError = useCallback(() => {
+    toast.error("Could not copy link", { duration: 3000 });
+  }, []);
+
   const actionClassName = cn(
     "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-10",
     "hover:bg-ms-accent/90 hover:text-white",
+    "focus-visible:ring-ms-accent/60 focus-visible:ring-2 focus-visible:outline-none",
   );
 
   return (
     <div
       className={cn(
-        "relative z-10 flex w-fit gap-1 opacity-100 transition-opacity",
+        "relative z-10 grid w-fit grid-cols-3 items-start gap-1 opacity-100 transition-opacity motion-reduce:transition-none lg:flex",
         className,
       )}
       data-article-actions
@@ -82,6 +87,7 @@ export function ArticleActions({
         }}
         className={cn(
           actionClassName,
+          "order-1 lg:order-none",
           isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
         )}
         aria-label={
@@ -103,6 +109,7 @@ export function ArticleActions({
         isExpanded={isShareExpanded}
         onToggle={handleShareToggle}
         onCopied={handleCopied}
+        onCopyError={handleCopyError}
         size={size === "compact" ? "sm" : "md"}
       />
 
@@ -112,7 +119,10 @@ export function ArticleActions({
             type="button"
             disabled={!onHide}
             onClick={(event) => event.stopPropagation()}
-            className={cn(actionClassName, "text-ms-text-secondary")}
+            className={cn(
+              actionClassName,
+              "text-ms-text-secondary order-3 lg:order-none",
+            )}
             aria-label={
               onHide ? "Hide options" : "Hidden preferences unavailable"
             }

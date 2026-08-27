@@ -16,7 +16,11 @@ export const MOCK_ARTICLES: Article[] = [
     excerpt: "A developer-focused news aggregation service",
     score: 95,
     externalId: "hn-1",
-    metadata: { comments: 42, author: "testuser", createdAt: new Date().toISOString() },
+    metadata: {
+      comments: 42,
+      author: "testuser",
+      createdAt: new Date().toISOString(),
+    },
   },
   {
     source: "github",
@@ -25,7 +29,11 @@ export const MOCK_ARTICLES: Article[] = [
     thumbnailUrl: undefined,
     score: 90,
     externalId: "gh-1",
-    metadata: { stars: 1500, language: "TypeScript", createdAt: new Date().toISOString() },
+    metadata: {
+      stars: 1500,
+      language: "TypeScript",
+      createdAt: new Date().toISOString(),
+    },
   },
   {
     source: "reddit",
@@ -33,7 +41,11 @@ export const MOCK_ARTICLES: Article[] = [
     url: "https://reddit.com/r/webdev/comments/test",
     score: 80,
     externalId: "reddit-1",
-    metadata: { subreddit: "webdev", upvotes: 350, createdAt: new Date().toISOString() },
+    metadata: {
+      subreddit: "webdev",
+      upvotes: 350,
+      createdAt: new Date().toISOString(),
+    },
   },
   {
     source: "tech_rss",
@@ -85,10 +97,16 @@ export function isMobileViewport(page: Page): boolean {
  */
 export async function openMobileMenu(page: Page): Promise<void> {
   if (isMobileViewport(page)) {
-    const hamburger = page.getByLabel("Open menu");
+    // Next.js transitions may briefly retain both route trees, so target only the first visible trigger.
+    const hamburger = page
+      .locator('button[aria-label="Open menu"]:visible')
+      .first();
     if (await hamburger.isVisible().catch(() => false)) {
       await hamburger.click();
-      await page.getByLabel("Mobile navigation").waitFor({ state: "visible" });
+      await page
+        .locator('[aria-label="Mobile navigation"]:visible')
+        .first()
+        .waitFor({ state: "visible" });
     }
   }
 }

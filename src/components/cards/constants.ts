@@ -59,11 +59,11 @@ export const ARTICLE_IMAGE_SIZES: Record<
     "(max-width: 639px) 88vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 380px",
   wide: "(max-width: 1023px) 100vw, 600px",
   "media-two-column":
-    "(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 590px",
+    "(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 590px",
   "media-three-column":
-    "(max-width: 639px) 100vw, (max-width: 767px) 50vw, (max-width: 1279px) 33vw, 380px",
+    "(max-width: 767px) 100vw, (max-width: 1279px) 33vw, 380px",
   compact: "100vw",
-  lead: "(max-width: 1023px) 100vw, 760px",
+  lead: "(max-width: 1023px) 100vw, min(75vw, 882px)",
   "video-rail":
     "(max-width: 639px) 86vw, (max-width: 767px) 50vw, (max-width: 1279px) 33vw, 380px",
 };

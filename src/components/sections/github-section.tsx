@@ -44,13 +44,13 @@ export function GitHubSection({
 
       {/* Repository descriptions earn the larger first row; overflow becomes dense headline rows. */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {featuredArticles.map((article) => (
+        {featuredArticles.map((article, index) => (
           <ArticleCard
             key={article.id}
             article={article}
             presentation="media-three-column"
             showExcerpt
-            imageLoading="eager"
+            imageLoading={index === 0 ? "eager" : "lazy"}
             onBookmark={onBookmark}
             onHide={onHide}
             isBookmarked={bookmarkedIds.has(article.id)}

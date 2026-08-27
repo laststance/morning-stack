@@ -78,7 +78,7 @@ function HNListItem({
   return (
     <article
       className={cn(
-        "group relative flex items-start gap-3 rounded-md px-3 pt-14 pb-2.5 lg:py-2.5",
+        "group relative flex flex-col rounded-md px-3 py-2.5",
         "border border-transparent bg-transparent",
         "transition-[border-color,background-color,box-shadow] duration-150 motion-reduce:transition-none",
         "hover:border-ms-border/50 hover:bg-ms-bg-secondary hover:shadow-sm",
@@ -86,64 +86,66 @@ function HNListItem({
       )}
       data-article-variant="ranked"
     >
-      {/* Rank number */}
-      <span
-        className="text-ms-text-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold"
-        aria-label={`Rank ${rank}`}
-      >
-        {rank}
-      </span>
+      <div className="flex items-start gap-3">
+        {/* Rank number */}
+        <span
+          className="text-ms-text-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold"
+          aria-label={`Rank ${rank}`}
+        >
+          {rank}
+        </span>
 
-      {/* Content column */}
-      <div className="min-w-0 flex-1">
-        {/* Title row */}
-        <h3 className="text-ms-text-primary text-sm leading-snug font-medium">
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-article-headline
-            className="outline-none after:absolute after:inset-0 focus-visible:underline"
-          >
-            {article.title}
-          </a>
-          {domain && (
-            <span className="text-ms-text-muted ml-1.5 text-xs font-normal">
-              ({domain})
+        {/* Content column */}
+        <div className="min-w-0 flex-1">
+          {/* Title row */}
+          <h3 className="text-ms-text-primary text-sm leading-snug font-medium">
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-article-headline
+              className="outline-none after:absolute after:inset-0 focus-visible:underline"
+            >
+              {article.title}
+            </a>
+            {domain && (
+              <span className="text-ms-text-muted ml-1.5 text-xs font-normal">
+                ({domain})
+              </span>
+            )}
+          </h3>
+
+          {/* Meta row: points + comments + author */}
+          <div className="text-ms-text-muted mt-1 flex items-center gap-3 text-xs">
+            {/* Points */}
+            <span
+              className="inline-flex items-center gap-1 font-mono text-orange-500 tabular-nums"
+              title={`${article.score} points`}
+            >
+              <ArrowBigUp className="size-3.5" aria-hidden="true" />
+              {formatScore(article.score)}
             </span>
-          )}
-        </h3>
 
-        {/* Meta row: points + comments + author */}
-        <div className="text-ms-text-muted mt-1 flex items-center gap-3 text-xs">
-          {/* Points */}
-          <span
-            className="inline-flex items-center gap-1 font-mono text-orange-500 tabular-nums"
-            title={`${article.score} points`}
-          >
-            <ArrowBigUp className="size-3.5" aria-hidden="true" />
-            {formatScore(article.score)}
-          </span>
+            {/* Comments */}
+            <a
+              href={`https://news.ycombinator.com/item?id=${article.externalId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-ms-text-secondary relative z-10 inline-flex items-center gap-1 transition-colors"
+              title={`${comments} comments`}
+            >
+              <MessageSquare className="size-3" aria-hidden="true" />
+              <span className="font-mono tabular-nums">{comments}</span>
+            </a>
 
-          {/* Comments */}
-          <a
-            href={`https://news.ycombinator.com/item?id=${article.externalId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-ms-text-secondary relative z-10 inline-flex items-center gap-1 transition-colors"
-            title={`${comments} comments`}
-          >
-            <MessageSquare className="size-3" aria-hidden="true" />
-            <span className="font-mono tabular-nums">{comments}</span>
-          </a>
-
-          {/* Author */}
-          {author && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="truncate">{author}</span>
-            </>
-          )}
+            {/* Author */}
+            {author && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="truncate">{author}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -153,7 +155,7 @@ function HNListItem({
         onHide={onHide}
         isBookmarked={isBookmarked}
         size="compact"
-        className="absolute top-2 right-2 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+        className="mt-2 ml-auto lg:absolute lg:top-2 lg:right-2 lg:mt-0 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
       />
     </article>
   );
@@ -170,6 +172,8 @@ export interface HackerNewsSectionProps {
   onHide?: (action: HideAction) => void;
   /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
+  /** Original visible source positions retained when higher stories are promoted above this band. */
+  articleRanks?: ReadonlyMap<string, number>;
 }
 
 // ─── Main section ────────────────────────────────────────────────────
@@ -186,6 +190,7 @@ export function HackerNewsSection({
   onBookmark,
   onHide,
   bookmarkedIds = new Set(),
+  articleRanks,
 }: HackerNewsSectionProps) {
   if (articles.length === 0) return null;
 
@@ -203,7 +208,7 @@ export function HackerNewsSection({
           <div key={article.id} className={cn(index === 0 && "lg:col-span-2")}>
             <HNListItem
               article={article}
-              rank={index + 1}
+              rank={articleRanks?.get(article.id) ?? index + 1}
               onBookmark={onBookmark}
               onHide={onHide}
               isBookmarked={bookmarkedIds.has(article.id)}

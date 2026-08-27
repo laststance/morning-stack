@@ -44,6 +44,17 @@ test("authenticated readers see signed-in Header controls without a client sessi
     await openMobileMenu(page);
   }
 
+  // Act: leaving and returning to the tab must not reintroduce Auth.js client polling.
+  const backgroundPage = await context.newPage();
+  await backgroundPage.bringToFront();
+  await page.bringToFront();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+
   // Assert
   await expect(page.getByRole("button", { name: /Sign out/ })).toBeVisible();
   await expect(
@@ -55,4 +66,6 @@ test("authenticated readers see signed-in Header controls without a client sessi
   ).toBeVisible();
   expect(clientSessionRequests).toEqual([]);
   expect(authConsoleErrors).toEqual([]);
+
+  await backgroundPage.close();
 });

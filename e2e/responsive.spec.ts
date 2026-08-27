@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { waitForPageReady } from "./fixtures";
 
+const EXPECTED_EDITORIAL_SECTION_ORDER = [
+  "Featured story",
+  "GitHub Trending",
+  "Daily widgets",
+  "Supporting headlines",
+  "Tech News",
+  "Hacker News",
+  "Reddit",
+  "Social Media",
+  "Pull Requests",
+  "Hatena Bookmark",
+];
+
 test.describe("Responsive Layout — Mobile (<640px)", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
@@ -59,9 +72,17 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
     // Act
     const main = page.locator("main");
     const mainBox = await main.boundingBox();
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
 
     // Assert
     expect(mainBox?.width).toBe(375);
+    expect(sectionNames).toEqual(EXPECTED_EDITORIAL_SECTION_ORDER);
     await expect(page.locator('[data-layout="video-rail"]')).toHaveCSS(
       "overflow-x",
       "auto",
@@ -111,8 +132,16 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     const youtubeColumns = await youtubeRail.evaluate((grid) =>
       getComputedStyle(grid).gridTemplateColumns.split(" "),
     );
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
 
     // Assert
+    expect(sectionNames).toEqual(EXPECTED_EDITORIAL_SECTION_ORDER);
     expect(githubBox).not.toBeNull();
     expect(hatenaBox).not.toBeNull();
     expect(githubBox?.width).toBeGreaterThanOrEqual(700);
@@ -199,6 +228,9 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     const githubBand = page.getByRole("region", {
       name: "GitHub Trending",
     });
+    const githubImages = githubBand.locator(
+      '[data-article-variant="media-three-column"] img',
+    );
 
     // Assert
     await expect(featuredStory.locator("[data-article-summary]")).toHaveText(
@@ -209,6 +241,10 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     ).toHaveText(
       "A focused TypeScript toolkit for assembling fast developer briefings.",
     );
+    await expect(githubImages).toHaveCount(3);
+    await expect(githubImages.nth(0)).toHaveAttribute("loading", "eager");
+    await expect(githubImages.nth(1)).toHaveAttribute("loading", "lazy");
+    await expect(githubImages.nth(2)).toHaveAttribute("loading", "lazy");
   });
 
   test("keeps one editorial order while source-specific compositions absorb five stories", async ({
@@ -251,7 +287,7 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     ).toHaveCount(2);
     await expect(
       hatenaBand.locator('[data-article-variant="compact"]'),
-    ).toHaveCount(0);
+    ).toHaveCount(3);
   });
 });
 

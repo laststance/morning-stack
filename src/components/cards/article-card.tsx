@@ -159,7 +159,7 @@ export function ArticleCard({
         className={cn(
           "flex flex-1 flex-col gap-2 p-3",
           !thumbnailUrl && !isCompact && "min-h-28",
-          isCompact && "px-1 py-0 pr-32 sm:px-2 lg:pr-36",
+          isCompact && "px-1 py-0 sm:px-2 lg:pr-36",
           usesWideLayout && "lg:p-6",
         )}
       >
@@ -184,7 +184,7 @@ export function ArticleCard({
         {/* Promoted repository cards use their stored description to make the larger footprint informative. */}
         {excerpt && (
           <p
-            className="text-ms-text-secondary line-clamp-3 max-w-[65ch] text-sm leading-relaxed"
+            className="text-ms-text-secondary line-clamp-3 max-w-[65ch] text-base leading-relaxed"
             data-article-summary
           >
             {excerpt}
@@ -233,10 +233,9 @@ export function ArticleCard({
         isBookmarked={isBookmarked}
         size={isCompact ? "compact" : "standard"}
         className={cn(
-          "ml-auto px-3 pb-3",
-          "lg:absolute lg:top-2 lg:right-2 lg:p-0 lg:opacity-0",
+          isCompact ? "mr-1 mb-1 ml-auto" : "ml-auto px-3 pb-3",
+          "lg:absolute lg:top-2 lg:right-2 lg:m-0 lg:translate-y-0 lg:p-0 lg:opacity-0",
           "lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
-          isCompact && "absolute top-1/2 right-1 -translate-y-1/2 p-0",
         )}
       />
     </article>

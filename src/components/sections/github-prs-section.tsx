@@ -223,7 +223,7 @@ export function GitHubPRsSection({
             aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "pb-2 text-xs font-medium tracking-wider uppercase transition-colors",
+              "min-h-11 px-3 text-xs font-medium tracking-wider uppercase transition-colors",
               activeTab === tab
                 ? "border-ms-accent text-ms-accent border-b-2"
                 : "text-ms-text-muted hover:text-ms-text-secondary",

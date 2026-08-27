@@ -146,14 +146,11 @@ function filterHiddenArticles(
 // ─── Component ──────────────────────────────────────────────────────
 
 /**
- * Client-side home page content displaying all edition sections.
- *
- * Receives pre-fetched data from the server page component and renders
- * the full edition layout: Hero + Widgets → Tech/GitHub/HN/Reddit →
- * SNS → Hatena/World News.
- *
- * Bookmark and hide callbacks use optimistic Redux updates with server
- * action persistence. Unauthenticated users are redirected to /login.
+ * Renders server-loaded edition data as Lead → GitHub → current widgets → supporting stories → source bands, with optimistic personalization.
+ * @param props - Grouped articles, authentication state, and persisted bookmark or hidden-item state.
+ * @returns The source-specific editorial home composition for one resolved edition.
+ * @example
+ * <HomeContent articlesBySource={articlesBySource} allArticles={allArticles} isSignedIn={false} />
  */
 export function HomeContent(props: HomeContentProps) {
   const {
@@ -361,6 +358,18 @@ export function HomeContent(props: HomeContentProps) {
 
     return result;
   }, [featuredArticleIds, filteredArticlesBySource]);
+  const articleRanksBySource = useMemo(() => {
+    const result: Record<string, ReadonlyMap<string, number>> = {};
+
+    // Capture source order before promotions remove stories from their original bands.
+    for (const [source, articles] of Object.entries(filteredArticlesBySource)) {
+      result[source] = new Map(
+        articles.map((article, index) => [article.id, index + 1]),
+      );
+    }
+
+    return result;
+  }, [filteredArticlesBySource]);
 
   return (
     <div className="flex flex-col gap-10" data-layout="editorial-flow">
@@ -407,6 +416,7 @@ export function HomeContent(props: HomeContentProps) {
       />
       <HackerNewsSection
         articles={getArticles(sectionArticlesBySource, "hackernews")}
+        articleRanks={articleRanksBySource.hackernews}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
@@ -432,6 +442,7 @@ export function HomeContent(props: HomeContentProps) {
       />
       <HatenaSection
         articles={getArticles(sectionArticlesBySource, "hatena")}
+        articleRanks={articleRanksBySource.hatena}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}

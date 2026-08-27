@@ -54,14 +54,25 @@ export function ContentSection({
       {/* Generic sources stay in document flow; only the dedicated video rail scrolls horizontally. */}
       <div
         className={cn(
-          "grid grid-cols-1 gap-4 sm:grid-cols-2",
-          articleCount >= 3 && "lg:grid-cols-3",
+          "grid grid-cols-1 gap-4",
+          articleCount >= 2 && "sm:grid-cols-2",
+          articleCount === 3 && "lg:grid-cols-3",
+          articleCount === 4 && "lg:grid-cols-2",
+          articleCount === 5 && "lg:grid-cols-6",
         )}
         data-layout="article-grid"
         data-article-count={articleCount}
       >
-        {visibleArticles.map((article) => (
-          <div key={article.id}>
+        {visibleArticles.map((article, articleIndex) => (
+          <div
+            key={article.id}
+            className={cn(
+              "h-full",
+              // Five stories balance as three cards above two wider cards instead of leaving an orphan.
+              articleCount === 5 &&
+                (articleIndex < 3 ? "lg:col-span-2" : "lg:col-span-3"),
+            )}
+          >
             <ArticleCard
               article={article}
               onBookmark={onBookmark}

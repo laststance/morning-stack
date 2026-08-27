@@ -135,6 +135,62 @@ test.describe("Article Action Consistency", () => {
       }
     }
   });
+
+  test("promoted Hacker News stories retain the remaining story's original source rank", async ({
+    page,
+  }) => {
+    // Arrange / Act
+    await page.goto("/");
+    await waitForPageReady(page);
+    const hackerNewsBand = page.getByRole("region", { name: "Hacker News" });
+
+    // Assert
+    await expect(hackerNewsBand.getByLabel("Rank 5")).toBeVisible();
+    await expect(
+      hackerNewsBand.getByText("Fifth Hacker News story"),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Tablet Article Action Containment", () => {
+  test.use({ viewport: { width: 768, height: 1024 } });
+
+  test("every rendered card keeps all six expanded actions inside its 768px layout boundary", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+    const articles = page.locator("main article:visible");
+    const articleCount = await articles.count();
+
+    // Act / Assert
+    expect(articleCount).toBeGreaterThan(0);
+    for (let index = 0; index < articleCount; index += 1) {
+      const article = articles.nth(index);
+      await article.getByRole("button", { name: "Share article" }).click();
+      const articleBox = await article.boundingBox();
+      const actionButtons = article.locator("[data-article-actions] button");
+      const actionCount = await actionButtons.count();
+
+      expect(articleBox).not.toBeNull();
+      expect(actionCount).toBe(6);
+      for (let actionIndex = 0; actionIndex < actionCount; actionIndex += 1) {
+        const actionBox = await actionButtons.nth(actionIndex).boundingBox();
+        expect(actionBox).not.toBeNull();
+        expect(actionBox!.x).toBeGreaterThanOrEqual(articleBox!.x);
+        expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
+          articleBox!.x + articleBox!.width,
+        );
+        expect(actionBox!.y).toBeGreaterThanOrEqual(articleBox!.y);
+        expect(actionBox!.y + actionBox!.height).toBeLessThanOrEqual(
+          articleBox!.y + articleBox!.height,
+        );
+      }
+
+      await article.getByRole("button", { name: "Close share menu" }).click();
+    }
+  });
 });
 
 test.describe("Bookmark Feature", () => {

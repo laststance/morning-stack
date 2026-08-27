@@ -5,8 +5,11 @@ import { useState } from "react";
 import { Eye, Heart, Play, Repeat2 } from "lucide-react";
 
 import { ArticleActions } from "@/components/cards/article-actions";
-import { SOURCE_BADGE_TEXT_COLORS } from "@/components/cards/constants";
-import { ARTICLE_IMAGE_SIZES } from "@/components/cards/constants";
+import {
+  ARTICLE_IMAGE_SIZES,
+  SOURCE_BADGE_TEXT_COLORS,
+  SOURCE_COLORS,
+} from "@/components/cards/constants";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
 import type { PersistedArticle, HideAction } from "@/types/article";
@@ -25,11 +28,6 @@ export interface SnsSectionProps {
   /** Set of bookmarked persisted article IDs. */
   bookmarkedIds?: Set<string>;
 }
-
-// ─── Brand colors ───────────────────────────────────────────────────
-
-const BLUESKY_COLOR = "bg-blue-400";
-const YOUTUBE_COLOR = "bg-red-600";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -67,7 +65,7 @@ function YouTubeCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-md",
         "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
         "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
@@ -120,7 +118,10 @@ function YouTubeCard({
 
         {/* Source brand bar */}
         <span
-          className={cn("absolute bottom-0 left-0 h-0.5 w-full", YOUTUBE_COLOR)}
+          className={cn(
+            "absolute bottom-0 left-0 h-0.5 w-full",
+            SOURCE_COLORS.youtube,
+          )}
           aria-hidden="true"
         />
       </a>
@@ -143,7 +144,7 @@ function YouTubeCard({
           <span
             className={cn(
               "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-medium",
-              YOUTUBE_COLOR,
+              SOURCE_COLORS.youtube,
               SOURCE_BADGE_TEXT_COLORS.youtube,
             )}
           >
@@ -205,7 +206,7 @@ function BlueskyCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-md",
         "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
         "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
@@ -215,7 +216,7 @@ function BlueskyCard({
     >
       {/* Source brand bar (top) */}
       <span
-        className={cn("h-0.5 w-full shrink-0", BLUESKY_COLOR)}
+        className={cn("h-0.5 w-full shrink-0", SOURCE_COLORS.bluesky)}
         aria-hidden="true"
       />
 
@@ -243,7 +244,7 @@ function BlueskyCard({
           <span
             className={cn(
               "inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium",
-              BLUESKY_COLOR,
+              SOURCE_COLORS.bluesky,
               SOURCE_BADGE_TEXT_COLORS.bluesky,
             )}
           >
@@ -259,7 +260,7 @@ function BlueskyCard({
           data-article-headline
           className="outline-none after:absolute after:inset-0 focus-visible:underline"
         >
-          <p className="text-ms-text-primary line-clamp-3 text-sm leading-relaxed">
+          <p className="text-ms-text-primary line-clamp-3 text-base leading-relaxed">
             {article.excerpt ?? article.title}
           </p>
         </a>
@@ -324,7 +325,7 @@ export function SnsSection({
             <SectionHeader title="Bluesky" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {blueskyArticles.slice(0, 3).map((article) => (
-                <div key={article.id}>
+                <div key={article.id} className="h-full">
                   <BlueskyCard
                     article={article}
                     onBookmark={onBookmark}
@@ -348,7 +349,7 @@ export function SnsSection({
               {youtubeArticles.slice(0, 3).map((article) => (
                 <div
                   key={article.id}
-                  className="w-[86vw] max-w-md shrink-0 snap-start scroll-ml-4 sm:w-auto sm:max-w-none"
+                  className="h-full w-[86vw] max-w-md shrink-0 snap-start scroll-ml-4 sm:w-auto sm:max-w-none"
                 >
                   <YouTubeCard
                     article={article}

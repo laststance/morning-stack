@@ -98,16 +98,16 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     const githubBand = page.getByRole("region", {
       name: "GitHub Trending",
     });
-    const hackerNewsBand = page.getByRole("region", { name: "Hacker News" });
+    const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
     const githubBox = await githubBand.boundingBox();
-    const hackerNewsBox = await hackerNewsBand.boundingBox();
+    const hatenaBox = await hatenaBand.boundingBox();
 
     // Assert
     expect(githubBox).not.toBeNull();
-    expect(hackerNewsBox).not.toBeNull();
+    expect(hatenaBox).not.toBeNull();
     expect(githubBox?.width).toBeGreaterThanOrEqual(700);
-    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(700);
-    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+    expect(hatenaBox?.width).toBeGreaterThanOrEqual(700);
+    expect(hatenaBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
   });
@@ -156,22 +156,19 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     const githubBand = editorialFlow.getByRole("region", {
       name: "GitHub Trending",
     });
-    const hackerNewsBand = editorialFlow.getByRole("region", {
-      name: "Hacker News",
+    const hatenaBand = editorialFlow.getByRole("region", {
+      name: "Hatena Bookmark",
     });
     const githubBox = await githubBand.boundingBox();
-    const hackerNewsBox = await hackerNewsBand.boundingBox();
+    const hatenaBox = await hatenaBand.boundingBox();
 
     // Assert
     await expect(editorialFlow).toBeVisible();
     await expect(githubBand).toHaveAttribute("data-layout", "editorial-band");
-    await expect(hackerNewsBand).toHaveAttribute(
-      "data-layout",
-      "editorial-band",
-    );
+    await expect(hatenaBand).toHaveAttribute("data-layout", "editorial-band");
     expect(githubBox?.width).toBeGreaterThanOrEqual(1160);
-    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(1160);
-    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+    expect(hatenaBox?.width).toBeGreaterThanOrEqual(1160);
+    expect(hatenaBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
   });
@@ -221,13 +218,16 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
 
     // Assert
-    expect(sectionNames.slice(0, 5)).toEqual([
+    expect(sectionNames.slice(0, 4)).toEqual([
       "Featured story",
       "GitHub Trending",
       "Daily widgets",
       "Supporting headlines",
-      "Hacker News",
     ]);
+    const headlineUrls = await page
+      .locator("[data-article-headline]")
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    expect(new Set(headlineUrls).size).toBe(headlineUrls.length);
     await expect(
       githubBand.locator('[data-article-variant="media-three-column"]'),
     ).toHaveCount(3);
@@ -239,7 +239,7 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     ).toHaveCount(2);
     await expect(
       hatenaBand.locator('[data-article-variant="compact"]'),
-    ).toHaveCount(3);
+    ).toHaveCount(0);
   });
 });
 

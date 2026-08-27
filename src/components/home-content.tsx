@@ -340,6 +340,27 @@ export function HomeContent(props: HomeContentProps) {
     () => selectFeaturedStories(filteredAllArticles),
     [filteredAllArticles],
   );
+  const featuredArticleIds = useMemo(
+    () =>
+      new Set(
+        [featuredStories.leadArticle, ...featuredStories.supportingArticles]
+          .filter((article): article is PersistedArticle => Boolean(article))
+          .map((article) => article.id),
+      ),
+    [featuredStories],
+  );
+  const sectionArticlesBySource = useMemo(() => {
+    const result: Record<string, PersistedArticle[]> = {};
+
+    // Promoted stories appear once so the reading flow stays compact and every action has one home.
+    for (const [source, articles] of Object.entries(filteredArticlesBySource)) {
+      result[source] = articles.filter(
+        (article) => !featuredArticleIds.has(article.id),
+      );
+    }
+
+    return result;
+  }, [featuredArticleIds, filteredArticlesBySource]);
 
   return (
     <div className="flex flex-col gap-10" data-layout="editorial-flow">
@@ -353,7 +374,7 @@ export function HomeContent(props: HomeContentProps) {
       />
 
       <GitHubSection
-        articles={getArticles(filteredArticlesBySource, "github")}
+        articles={getArticles(sectionArticlesBySource, "github")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
@@ -379,44 +400,44 @@ export function HomeContent(props: HomeContentProps) {
 
       {/* Source bands remain independent so missing collectors collapse without blank columns. */}
       <TechSection
-        articles={getArticles(filteredArticlesBySource, "tech_rss")}
+        articles={getArticles(sectionArticlesBySource, "tech_rss")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <HackerNewsSection
-        articles={getArticles(filteredArticlesBySource, "hackernews")}
+        articles={getArticles(sectionArticlesBySource, "hackernews")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <RedditSection
-        articles={getArticles(filteredArticlesBySource, "reddit")}
+        articles={getArticles(sectionArticlesBySource, "reddit")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <SnsSection
-        blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
-        youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
+        blueskyArticles={getArticles(sectionArticlesBySource, "bluesky")}
+        youtubeArticles={getArticles(sectionArticlesBySource, "youtube")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <GitHubPRsSection
-        articles={getArticles(filteredArticlesBySource, "github_prs")}
+        articles={getArticles(sectionArticlesBySource, "github_prs")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <HatenaSection
-        articles={getArticles(filteredArticlesBySource, "hatena")}
+        articles={getArticles(sectionArticlesBySource, "hatena")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}
       />
       <WorldNewsSection
-        articles={getArticles(filteredArticlesBySource, "world_news")}
+        articles={getArticles(sectionArticlesBySource, "world_news")}
         onBookmark={bookmarkAction}
         onHide={hideAction}
         bookmarkedIds={bookmarkedIdsSet}

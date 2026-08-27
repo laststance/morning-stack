@@ -68,11 +68,13 @@ export function selectFeaturedStories(articles: PersistedArticle[]): {
     (firstArticle, secondArticle) => secondArticle.score - firstArticle.score,
   );
   const leadArticle = sortedArticles[0];
-  // GitHub already owns the next prominent band, so its repositories must not repeat immediately as supporting headlines.
+  // GitHub repositories and pull requests already own dedicated bands, so they must not be promoted out of them.
   const supportingArticles = sortedArticles
     .filter(
       (article) =>
-        article.id !== leadArticle?.id && article.source !== "github",
+        article.id !== leadArticle?.id &&
+        article.source !== "github" &&
+        article.source !== "github_prs",
     )
     .slice(0, 3);
 

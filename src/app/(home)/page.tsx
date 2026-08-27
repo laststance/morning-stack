@@ -16,6 +16,7 @@ import { SessionProvider } from "@/components/session-provider";
 import { auth } from "@/lib/auth";
 import { getDefaultEditionType } from "@/lib/edition-date/get-default-edition-type";
 import { getTodayJst } from "@/lib/edition-date/get-today-jst";
+import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
 import { getArchiveBoundaryRedirectHref } from "@/lib/edition-navigation/get-archive-boundary-redirect-href";
 import { resolveHomeSearchParams } from "@/lib/edition-navigation/resolve-home-search-params";
 import type { HomeSearchParams } from "@/lib/edition-navigation/resolved-home-selection";
@@ -107,6 +108,10 @@ export default async function HomePage({
   ]);
   const earliestPublishedDate =
     bounds.status === "available" ? bounds.earliestPublishedDate : null;
+  const fallbackEdition =
+    content.status === "found" && content.isLatestFallback
+      ? { date: content.edition.date, type: content.edition.type }
+      : null;
 
   return (
     <SessionProvider session={session}>
@@ -125,14 +130,16 @@ export default async function HomePage({
           requestedEditionType={selection.requestedEditionType}
           today={today}
           earliestPublishedDate={earliestPublishedDate}
-          fallbackEdition={
-            content.status === "found" && content.isLatestFallback
-              ? { date: content.edition.date, type: content.edition.type }
-              : null
-          }
+          fallbackEdition={fallbackEdition}
         />
 
         <main className="relative mx-auto flex max-w-[1240px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+          {fallbackEdition && (
+            <p className="border-ms-border/60 bg-ms-bg-secondary text-ms-text-secondary rounded-md border px-3 py-2 text-sm sm:hidden">
+              Latest available: {formatEditionDate(fallbackEdition.date)}{" "}
+              {fallbackEdition.type === "morning" ? "Morning" : "Evening"}
+            </p>
+          )}
           <HomeWarnings
             isBoundsUnavailable={bounds.status === "unavailable"}
             isPersonalizationUnavailable={

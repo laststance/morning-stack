@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function HomeLoading() {
   return (
-    <div aria-label="Loading edition" aria-busy="true">
+    <div role="status" aria-label="Loading edition" aria-busy="true">
       <div className="border-ms-border/60 h-16 border-b" />
       <div className="border-ms-border/60 flex h-[69px] items-center justify-center border-b px-4">
         <Skeleton className="h-11 w-full max-w-md" />

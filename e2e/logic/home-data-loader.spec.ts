@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 import { formatEditionContextLabel } from "@/components/edition-date/edition-date-navigator";
+import { selectFeaturedStories } from "@/components/sections/hero-section";
 import type { EditionData } from "@/lib/queries/edition";
 import { loadEditionContent } from "@/lib/queries/load-edition-content";
 import { loadEditionBounds } from "@/lib/queries/load-edition-bounds";
 import { resolveHomeSearchParams } from "@/lib/edition-navigation/resolve-home-search-params";
+import type { PersistedArticle } from "@/types/article";
 
 const LATEST_EDITION: EditionData = {
   id: "10000000-0000-4000-8000-000000000001",
@@ -40,6 +42,77 @@ test("implicit current briefing labels an older latest edition without changing 
       type: LATEST_EDITION.type,
     }),
   ).toBe("Latest available: Jan 14, 2030 Evening");
+});
+
+test("dedicated GitHub repositories and pull requests stay out of supporting headlines", () => {
+  // Arrange
+  const articles: PersistedArticle[] = [
+    {
+      id: "lead",
+      source: "hackernews",
+      title: "Lead",
+      url: "https://example.com/lead",
+      score: 100,
+      externalId: "lead",
+      metadata: {},
+    },
+    {
+      id: "pull-request",
+      source: "github_prs",
+      title: "Pull request",
+      url: "https://example.com/pull-request",
+      score: 99,
+      externalId: "pull-request",
+      metadata: {},
+    },
+    {
+      id: "repository",
+      source: "github",
+      title: "Repository",
+      url: "https://example.com/repository",
+      score: 98,
+      externalId: "repository",
+      metadata: {},
+    },
+    {
+      id: "tech",
+      source: "tech_rss",
+      title: "Tech",
+      url: "https://example.com/tech",
+      score: 97,
+      externalId: "tech",
+      metadata: {},
+    },
+    {
+      id: "reddit",
+      source: "reddit",
+      title: "Reddit",
+      url: "https://example.com/reddit",
+      score: 96,
+      externalId: "reddit",
+      metadata: {},
+    },
+    {
+      id: "hatena",
+      source: "hatena",
+      title: "Hatena",
+      url: "https://example.com/hatena",
+      score: 95,
+      externalId: "hatena",
+      metadata: {},
+    },
+  ];
+
+  // Act
+  const result = selectFeaturedStories(articles);
+
+  // Assert
+  expect(result.leadArticle?.id).toBe("lead");
+  expect(result.supportingArticles.map((article) => article.id)).toEqual([
+    "tech",
+    "reddit",
+    "hatena",
+  ]);
 });
 
 test("missing historical edition stays missing even when current-only widgets are unavailable", async () => {

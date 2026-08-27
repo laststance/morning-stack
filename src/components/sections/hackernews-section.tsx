@@ -91,12 +91,13 @@ function HNListItem({
         <span
           className="text-ms-text-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded font-mono text-xs font-semibold"
           aria-label={`Rank ${rank}`}
+          role="img"
         >
           {rank}
         </span>
 
         {/* Content column */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 lg:pr-36">
           {/* Title row */}
           <h3 className="text-ms-text-primary text-sm leading-snug font-medium">
             <a

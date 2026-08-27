@@ -2,8 +2,14 @@ import { expect, test } from "@playwright/test";
 
 import { waitForPageReady } from "./fixtures";
 
-test.describe("Source-owned editorial bands", () => {
+test.describe("Source-owned editorial bands — desktop composition", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Desktop hover and grid assertions run in the desktop Chromium project.",
+    );
+  });
 
   test("pull request tabs keep touch targets and odd rows usable", async ({
     page,
@@ -18,8 +24,13 @@ test.describe("Source-owned editorial bands", () => {
     // Act
     const openTabBox = await openTab.boundingBox();
     const mergedTabBox = await mergedTab.boundingBox();
+    const openGrid = section.locator(":scope > div.grid").first();
     const openCards = section.locator('[data-article-variant="pull-request"]');
-    const lastOpenCardWrapper = openCards.last().locator("..");
+    const lastOpenCardWrapper = openGrid.locator(":scope > div").last();
+    await openCards.first().hover();
+    const firstOpenCardActions = openCards
+      .first()
+      .locator("[data-article-actions]");
 
     // Assert
     await expect(openTab).toHaveAttribute("aria-selected", "true");
@@ -27,9 +38,8 @@ test.describe("Source-owned editorial bands", () => {
     expect(mergedTabBox?.height).toBeGreaterThanOrEqual(44);
     await expect(openCards).toHaveCount(3);
     await expect(lastOpenCardWrapper).toHaveCSS("grid-column-end", "span 2");
-    await expect(
-      openCards.first().locator("[data-article-actions]"),
-    ).toBeVisible();
+    await expect(firstOpenCardActions).toBeVisible();
+    await expect(firstOpenCardActions).toHaveCSS("opacity", "1");
 
     // Act
     await mergedTab.click();
@@ -56,6 +66,7 @@ test.describe("Source-owned editorial bands", () => {
     const blueskyCard = blueskyCards.first();
 
     // Act
+    await blueskyCard.hover();
     const actions = blueskyCard.locator("[data-article-actions]");
 
     // Assert
@@ -76,6 +87,7 @@ test.describe("Source-owned editorial bands", () => {
     await expect(
       actions.getByRole("button", { name: "Hide options" }),
     ).toBeVisible();
+    await expect(actions).toHaveCSS("opacity", "1");
     await expect(blueskyCards).toHaveCount(3);
     const blueskyCardHeights = await blueskyCards.evaluateAll((cards) =>
       cards.map((card) => Math.round(card.getBoundingClientRect().height)),
@@ -135,5 +147,43 @@ test.describe("Source-owned editorial bands", () => {
     await expect(
       eveningGrid.locator('[data-article-variant="wide"]'),
     ).toHaveCount(1);
+  });
+});
+
+test.describe("Source-owned editorial bands — responsive composition", () => {
+  test("Hacker News and Bluesky adapt at each configured viewport without horizontal overflow", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+    const viewportWidth = page.viewportSize()?.width;
+    if (!viewportWidth) throw new Error("A configured viewport is required");
+    const hackerNewsGrid = page
+      .getByRole("region", { name: "Hacker News" })
+      .locator(":scope > div.grid");
+    const blueskyGrid = page
+      .getByRole("region", { name: "Social Media" })
+      .locator("div.grid")
+      .first();
+
+    // Act
+    const hackerNewsColumns = await hackerNewsGrid.evaluate((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.split(" "),
+    );
+    const blueskyColumns = await blueskyGrid.evaluate((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.split(" "),
+    );
+    const widths = await page.evaluate(() => ({
+      client: document.documentElement.clientWidth,
+      scroll: document.documentElement.scrollWidth,
+    }));
+
+    // Assert
+    expect(hackerNewsColumns).toHaveLength(viewportWidth >= 1024 ? 2 : 1);
+    expect(blueskyColumns).toHaveLength(
+      viewportWidth >= 768 ? 3 : viewportWidth >= 640 ? 2 : 1,
+    );
+    expect(widths.scroll).toBe(widths.client);
   });
 });

@@ -1,6 +1,10 @@
 import { test as base, type Page } from "@playwright/test";
 import type { Article } from "../src/types/article";
 
+/** Canonical seeded lead-story URL shared by database setup and browser assertions. */
+export const E2E_CURRENT_SHARED_ARTICLE_URL =
+  "https://example.com/current-shared";
+
 /**
  * Mock article data for E2E tests.
  *
@@ -101,12 +105,11 @@ export async function openMobileMenu(page: Page): Promise<void> {
     const hamburger = page
       .locator('button[aria-label="Open menu"]:visible')
       .first();
-    if (await hamburger.isVisible().catch(() => false)) {
-      await hamburger.click();
-      await page
-        .locator('[aria-label="Mobile navigation"]:visible')
-        .first()
-        .waitFor({ state: "visible" });
-    }
+    await hamburger.waitFor({ state: "visible" });
+    await hamburger.click();
+    await page
+      .locator('[aria-label="Mobile navigation"]:visible')
+      .first()
+      .waitFor({ state: "visible" });
   }
 }

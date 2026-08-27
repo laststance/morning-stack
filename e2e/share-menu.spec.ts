@@ -90,7 +90,7 @@ test.describe("Share Menu", () => {
     page,
   }) => {
     // Arrange
-    await page.evaluate(() => {
+    await page.addInitScript(() => {
       Object.defineProperty(navigator, "clipboard", {
         configurable: true,
         value: {
@@ -98,6 +98,8 @@ test.describe("Share Menu", () => {
         },
       });
     });
+    await page.reload();
+    await waitForPageReady(page);
     const firstArticle = page.locator("article").first();
     await firstArticle.hover();
     await firstArticle.getByLabel("Share article").first().click();
@@ -141,6 +143,10 @@ test.describe("Share Menu", () => {
   }) => {
     // Arrange
     const firstArticle = page.locator("article").first();
+    const sharedTitle = await firstArticle
+      .locator("[data-article-headline]")
+      .first()
+      .innerText();
     await firstArticle.hover();
     await firstArticle.getByLabel("Share article").first().click();
     const popupPromise = page.waitForEvent("popup", { timeout: 5000 });
@@ -151,7 +157,9 @@ test.describe("Share Menu", () => {
     // Assert
     const popup = await popupPromise;
     expect(popup.url()).toContain("bsky.app/intent/compose");
-    expect(popup.url()).toContain("text=");
+    expect(new URL(popup.url()).searchParams.get("text")).toContain(
+      sharedTitle,
+    );
   });
 
   test("clicking outside share menu closes it", async ({ page }) => {

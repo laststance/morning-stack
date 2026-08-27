@@ -68,6 +68,7 @@ export function HatenaSection({
               <span
                 className="text-ms-text-muted pt-4 text-right font-mono text-xs tabular-nums"
                 aria-label={`Rank ${articleRanks?.get(article.id) ?? index + 3}`}
+                role="img"
               >
                 {articleRanks?.get(article.id) ?? index + 3}
               </span>

@@ -6,6 +6,7 @@ import postgres, { type Sql } from "postgres";
 import { db } from "@/lib/db";
 import { getWritableDraftEdition } from "@/lib/cron/edition-collector";
 import { tryAcquireEditionCollectionLock } from "@/lib/cron/try-acquire-edition-collection-lock";
+import { E2E_CURRENT_SHARED_ARTICLE_URL } from "../fixtures";
 
 const EXPECTED_DATABASE_NAME = "morning_stack_e2e";
 const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost"]);
@@ -194,7 +195,7 @@ async function seedArchive(sql: Sql): Promise<void> {
   await sql`
     insert into articles (id, edition_id, source, title, url, thumbnail_url, excerpt, score, external_id, metadata)
     values
-      ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'hackernews', 'Current shared story', 'https://example.com/current-shared', null, 'Current edition article', 99, 'shared-external-id', ${sql.json({ comments: 41, author: "current", createdAt: "2030-01-15T00:00:00.000Z" })}),
+      ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'hackernews', 'Current shared story', ${E2E_CURRENT_SHARED_ARTICLE_URL}, null, 'Current edition article', 99, 'shared-external-id', ${sql.json({ comments: 41, author: "current", createdAt: "2030-01-15T00:00:00.000Z" })}),
       ('20000000-0000-4000-8000-000000000018', '10000000-0000-4000-8000-000000000001', 'hackernews', 'Second Hacker News story', 'https://example.com/current-hn-2', null, 'Second ranked Hacker News article', 98, 'current-hn-2', ${sql.json({ comments: 38, author: "second", createdAt: "2030-01-15T00:00:00.000Z" })}),
       ('20000000-0000-4000-8000-000000000019', '10000000-0000-4000-8000-000000000001', 'hackernews', 'Third Hacker News story', 'https://example.com/current-hn-3', null, 'Third ranked Hacker News article', 97, 'current-hn-3', ${sql.json({ comments: 35, author: "third", createdAt: "2030-01-15T00:00:00.000Z" })}),
       ('20000000-0000-4000-8000-000000000020', '10000000-0000-4000-8000-000000000001', 'hackernews', 'Fourth Hacker News story', 'https://example.com/current-hn-4', null, 'Fourth ranked Hacker News article', 96, 'current-hn-4', ${sql.json({ comments: 32, author: "fourth", createdAt: "2030-01-15T00:00:00.000Z" })}),

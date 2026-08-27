@@ -74,7 +74,9 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     await waitForPageReady(page);
 
     // Desktop edition tabs should be visible
-    const tablist = page.getByRole("tablist", { name: "Edition selector" }).first();
+    const tablist = page
+      .getByRole("tablist", { name: "Edition selector" })
+      .first();
     await expect(tablist).toBeVisible();
 
     // Hamburger should be hidden
@@ -82,15 +84,29 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     await expect(hamburger).toBeHidden();
   });
 
-  test("content sections use 2-column grid", async ({ page }) => {
+  test("source sections span the reading width and stack in editorial order", async ({
+    page,
+  }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
-    // The content sections grid should use sm:grid-cols-2
-    // We check this by verifying the grid container exists
-    const gridContainer = page.locator(".grid.sm\\:grid-cols-2").first();
-    const exists = await gridContainer.count();
-    expect(exists).toBeGreaterThanOrEqual(0); // May or may not have content
+    // Act
+    const githubBand = page.getByRole("region", {
+      name: "GitHub Trending",
+    });
+    const hackerNewsBand = page.getByRole("region", { name: "Hacker News" });
+    const githubBox = await githubBand.boundingBox();
+    const hackerNewsBox = await hackerNewsBand.boundingBox();
+
+    // Assert
+    expect(githubBox).not.toBeNull();
+    expect(hackerNewsBox).not.toBeNull();
+    expect(githubBox?.width).toBeGreaterThanOrEqual(700);
+    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(700);
+    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+      (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
+    );
   });
 });
 
@@ -102,7 +118,9 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     await waitForPageReady(page);
 
     // Edition tabs visible
-    const tablist = page.getByRole("tablist", { name: "Edition selector" }).first();
+    const tablist = page
+      .getByRole("tablist", { name: "Edition selector" })
+      .first();
     await expect(tablist).toBeVisible();
 
     // Bookmarks and Settings icon buttons visible
@@ -110,7 +128,9 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     await expect(page.getByLabel("Settings").first()).toBeVisible();
 
     // Login button visible (not authenticated)
-    await expect(page.locator("header").getByText("Login").first()).toBeVisible();
+    await expect(
+      page.locator("header").getByText("Login").first(),
+    ).toBeVisible();
   });
 
   test("hamburger menu is hidden on desktop", async ({ page }) => {
@@ -119,6 +139,62 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
 
     const hamburger = page.getByLabel(/open menu/i);
     await expect(hamburger).toBeHidden();
+  });
+
+  test("editorial bands keep independent full-width layouts", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+
+    // Act
+    const editorialFlow = page.locator('[data-layout="editorial-flow"]');
+    const githubBand = editorialFlow.getByRole("region", {
+      name: "GitHub Trending",
+    });
+    const hackerNewsBand = editorialFlow.getByRole("region", {
+      name: "Hacker News",
+    });
+    const githubBox = await githubBand.boundingBox();
+    const hackerNewsBox = await hackerNewsBand.boundingBox();
+
+    // Assert
+    await expect(editorialFlow).toBeVisible();
+    await expect(githubBand).toHaveAttribute("data-layout", "editorial-band");
+    await expect(hackerNewsBand).toHaveAttribute(
+      "data-layout",
+      "editorial-band",
+    );
+    expect(githubBox?.width).toBeGreaterThanOrEqual(1180);
+    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(1180);
+    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+      (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
+    );
+  });
+
+  test("featured Hacker News and GitHub cards explain their larger footprint", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+
+    // Act
+    const featuredStories = page.getByRole("region", {
+      name: "Featured stories",
+    });
+    const githubBand = page.getByRole("region", {
+      name: "GitHub Trending",
+    });
+
+    // Assert
+    await expect(featuredStories.locator("[data-article-summary]")).toHaveText(
+      "Featured Hacker News discussion submitted by current. The community has added 41 comments so far.",
+    );
+    await expect(githubBand.locator("[data-article-summary]")).toHaveText(
+      "Current GitHub article",
+    );
   });
 });
 

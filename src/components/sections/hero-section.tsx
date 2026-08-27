@@ -131,6 +131,7 @@ interface HeroMainCardProps {
 
 /**
  * Renders the primary featured article with touch-visible actions and a compact desktop hover treatment.
+ * @param props - Featured article, bookmark state, and optional personalization callbacks.
  * @returns The large hero card for the highest-scoring article.
  * @example
  * <HeroMainCard article={article} onBookmark={handleBookmark} />
@@ -160,6 +161,7 @@ function HeroMainCard({
   const keyword = extractKeyword(article.title);
   const thumbnailUrl =
     article.thumbnailUrl && !imgError ? article.thumbnailUrl : null;
+  const supportingText = getHeroSupportingText(article);
 
   return (
     <article
@@ -263,10 +265,13 @@ function HeroMainCard({
             </a>
           </h2>
 
-          {/* Excerpt — 3-line clamp */}
-          {article.excerpt && (
-            <p className="text-ms-text-secondary line-clamp-3 text-sm leading-relaxed">
-              {article.excerpt}
+          {/* Supporting context fills the lead card without competing with its headline. */}
+          {supportingText && (
+            <p
+              className="text-ms-text-secondary line-clamp-3 max-w-[70ch] text-sm leading-relaxed"
+              data-article-summary
+            >
+              {supportingText}
             </p>
           )}
         </div>
@@ -366,4 +371,43 @@ function HeroMainCard({
       </div>
     </article>
   );
+}
+
+/**
+ * Builds factual lead-card context when HeroMainCard receives a story, avoiding fabricated summaries for HN links without excerpts.
+ * @param article - Persisted featured article with optional excerpt and source metadata.
+ * @returns
+ * - Non-HN article: its trimmed stored excerpt when available.
+ * - HN article: a source-backed sentence using its submitter and comment count.
+ * @example
+ * getHeroSupportingText(hackerNewsArticle) // => "Featured Hacker News discussion submitted by alice. The community has added 42 comments so far."
+ */
+function getHeroSupportingText(article: PersistedArticle): string | undefined {
+  const storedExcerpt = article.excerpt?.trim();
+  if (article.source !== "hackernews") return storedExcerpt || undefined;
+
+  const metadataAuthor = article.metadata.author;
+  const metadataComments = article.metadata.comments;
+  const author =
+    typeof metadataAuthor === "string" && metadataAuthor.trim().length > 0
+      ? metadataAuthor.trim()
+      : undefined;
+  const commentCount =
+    typeof metadataComments === "number" && metadataComments >= 0
+      ? metadataComments
+      : undefined;
+
+  if (author && commentCount !== undefined) {
+    const commentLabel = commentCount === 1 ? "comment" : "comments";
+    return `Featured Hacker News discussion submitted by ${author}. The community has added ${commentCount} ${commentLabel} so far.`;
+  }
+
+  if (commentCount !== undefined) {
+    const commentLabel = commentCount === 1 ? "comment" : "comments";
+    return `Featured Hacker News discussion with ${commentCount} community ${commentLabel}.`;
+  }
+
+  if (author) return `Featured Hacker News discussion submitted by ${author}.`;
+
+  return "Featured discussion from the Hacker News community.";
 }

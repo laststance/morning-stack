@@ -177,7 +177,8 @@ export function HomeContent(props: HomeContentProps) {
   const hiddenTopicsArray = useAppSelector(
     (state) => state.hidden.hiddenTopics,
   );
-  const isPersonalizationAvailable = props.personalizationStatus === "available";
+  const isPersonalizationAvailable =
+    props.personalizationStatus === "available";
 
   // Re-sync after navigation/retry so the persistent Root Layout store cannot retain an older server snapshot.
   useEffect(() => {
@@ -327,13 +328,13 @@ export function HomeContent(props: HomeContentProps) {
     },
     [isSignedIn, router, dispatch],
   );
-  const bookmarkAction =
-    isPersonalizationAvailable ? handleBookmark : undefined;
-  const hideAction =
-    isPersonalizationAvailable ? handleHide : undefined;
+  const bookmarkAction = isPersonalizationAvailable
+    ? handleBookmark
+    : undefined;
+  const hideAction = isPersonalizationAvailable ? handleHide : undefined;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8" data-layout="editorial-flow">
       {/* ── Hero + Widgets row ──────────────────────────────────── */}
       <div className="flex flex-col gap-5 lg:flex-row">
         {/* Hero section — 3/4 width on desktop */}
@@ -358,8 +359,8 @@ export function HomeContent(props: HomeContentProps) {
         )}
       </div>
 
-      {/* ── Tech / GitHub / HN / Reddit — 4-column grid ────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Source bands stay independent so one tall or missing source cannot hold back the next section. */}
+      <div className="flex flex-col gap-8">
         <TechSection
           articles={getArticles(filteredArticlesBySource, "tech_rss")}
           onBookmark={bookmarkAction}
@@ -384,33 +385,29 @@ export function HomeContent(props: HomeContentProps) {
           onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
-      </div>
 
-      {/* ── SNS section (Bluesky + YouTube) ─────────────────────── */}
-      <SnsSection
-        blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
-        youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
-        onBookmark={bookmarkAction}
-        onHide={hideAction}
-        bookmarkedIds={bookmarkedIdsSet}
-      />
+        <SnsSection
+          blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
+          youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
+          bookmarkedIds={bookmarkedIdsSet}
+        />
 
-      {/* ── GitHub Pull Requests ─────────────────────────────────── */}
-      <GitHubPRsSection
-        articles={getArticles(filteredArticlesBySource, "github_prs")}
-        onBookmark={bookmarkAction}
-        onHide={hideAction}
-        bookmarkedIds={bookmarkedIdsSet}
-      />
+        <GitHubPRsSection
+          articles={getArticles(filteredArticlesBySource, "github_prs")}
+          onBookmark={bookmarkAction}
+          onHide={hideAction}
+          bookmarkedIds={bookmarkedIdsSet}
+        />
 
-      {/* ── Hatena / World News — 3-column grid ─────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <HatenaSection
           articles={getArticles(filteredArticlesBySource, "hatena")}
           onBookmark={bookmarkAction}
           onHide={hideAction}
           bookmarkedIds={bookmarkedIdsSet}
         />
+
         <WorldNewsSection
           articles={getArticles(filteredArticlesBySource, "world_news")}
           onBookmark={bookmarkAction}

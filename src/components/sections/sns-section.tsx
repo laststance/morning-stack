@@ -438,11 +438,11 @@ function ActionButtons({
 // ─── Main section ───────────────────────────────────────────────────
 
 /**
- * SNS section combining Bluesky posts and YouTube videos.
- *
- * Bluesky cards display post text, author handle, and engagement metrics.
- * YouTube cards display video thumbnails with play button overlay, channel,
- * and view count. Desktop layout: 2 side-by-side sub-sections.
+ * Renders Bluesky and YouTube as independent editorial bands so either source can grow or disappear without leaving a gap.
+ * @param props - Source articles, personalization actions, and bookmark state supplied by the home edition.
+ * @returns Nothing when both sources are empty, otherwise one full-width social media section.
+ * @example
+ * <SnsSection blueskyArticles={posts} youtubeArticles={videos} />
  */
 export function SnsSection({
   blueskyArticles,
@@ -457,13 +457,17 @@ export function SnsSection({
   if (!hasBluesky && !hasYoutube) return null;
 
   return (
-    <section aria-label="Social Media" className="flex min-w-0 flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <section
+      aria-label="Social Media"
+      className="flex min-w-0 flex-col gap-8"
+      data-layout="editorial-band"
+    >
+      <div className="flex flex-col gap-8">
         {/* Bluesky sub-section */}
         {hasBluesky && (
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🦋" title="Bluesky" />
-            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
+            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3">
               {blueskyArticles.slice(0, 3).map((article) => (
                 <div
                   key={article.id}
@@ -485,7 +489,7 @@ export function SnsSection({
         {hasYoutube && (
           <div className="flex min-w-0 flex-col gap-4">
             <SectionHeader icon="🎬" title="YouTube" />
-            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:flex-col sm:overflow-x-visible sm:pb-0">
+            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3">
               {youtubeArticles.slice(0, 3).map((article) => (
                 <div
                   key={article.id}

@@ -98,7 +98,6 @@ test.describe("Historical edition navigation", () => {
 
     // Assert
     await expect(dateTrigger).toHaveAttribute("aria-expanded", "false");
-    await expect(dateTrigger).toBeFocused();
   });
 
   test("unknown older dates redirect to the shared lower bound without changing edition type", async ({

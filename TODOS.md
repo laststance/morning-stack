@@ -38,4 +38,43 @@
 **Priority:** P3
 **Depends on:** None
 
+### Replace navigation tabs with link semantics
+
+**What:** Convert the Morning/Evening header selector from incomplete tab roles to navigation links with `aria-current`.
+
+**Why:** Page navigation should not promise arrow-key tab behavior or a tabpanel relationship that the interface does not implement.
+
+**Pros:** Screen-reader and keyboard users get a conventional, accurate navigation model.
+**Cons:** Header interaction tests and both desktop/mobile selector variants need coordinated updates.
+**Context:** The current controls navigate between URLs instead of swapping a local tabpanel, so link semantics match the observable behavior.
+**Effort:** S
+**Priority:** P2
+**Depends on:** None
+
+### Route glass utility colors through design tokens
+
+**What:** Replace the direct dark OKLCH values in `glass-subtle` with the shared `ms-glass-*` tokens for both themes.
+
+**Why:** Light-theme action surfaces should inherit the same semantic surface system as the rest of the product.
+
+**Pros:** Theme tuning becomes centralized and action controls no longer carry a one-off color system.
+**Cons:** Requires contrast and hover-state verification across popovers, compact actions, and the header.
+**Context:** The current rendered surface is legible, so this is design-system cleanup rather than a blocker for the editorial layout.
+**Effort:** S
+**Priority:** P3
+**Depends on:** None
+
+### Revisit global shell and editorial column alignment
+
+**What:** Decide whether the 1440px header shell should align to the 1240px home reading column or remain intentionally wider.
+
+**Why:** At wide viewports the logo and header actions sit outside the article grid axis, which can read as either deliberate framing or subtle misalignment.
+
+**Pros:** A product-wide decision would make alignment consistent across Home, Bookmarks, Settings, and About.
+**Cons:** Changing only the home header would create cross-page drift, so the work requires a global-shell review.
+**Context:** Keep the current 1240px content width; it solved the oversized container problem and reads well at 1440px.
+**Effort:** M
+**Priority:** P3
+**Depends on:** Global shell design review
+
 ## Completed

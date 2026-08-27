@@ -1,5 +1,7 @@
 # MorningStack MVP - Product Requirements Document
 
+> Historical planning artifact for the original MVP. See [README.md](../README.md) for current behavior and [DESIGN.md](../DESIGN.md) for the active visual rules.
+
 ## Overview
 
 MorningStack is a next-generation news aggregation service for tech professionals. Delivers curated news twice daily (morning/evening editions) from multiple sources including HackerNews, GitHub, Reddit, Bluesky, YouTube, and world news. Built with Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Drizzle ORM, Supabase, Upstash Redis, and Redux Toolkit.

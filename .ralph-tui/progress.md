@@ -1,5 +1,7 @@
 # Ralph Progress Log
 
+> Historical implementation log for the MVP. See [README.md](../README.md) and [DESIGN.md](../DESIGN.md) for the current product and visual contract.
+
 This file tracks progress across iterations. Agents update this file
 after each iteration and it's included in prompts for context.
 

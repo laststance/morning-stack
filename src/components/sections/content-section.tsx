@@ -6,8 +6,6 @@ import { SectionHeader } from "@/components/sections/section-header";
 import type { PersistedArticle, HideAction } from "@/types/article";
 
 export interface ContentSectionProps {
-  /** Emoji or icon for the section header. */
-  icon: string;
   /** Section title text. */
   title: string;
   /** Articles to display in this section (max 5). */
@@ -22,19 +20,16 @@ export interface ContentSectionProps {
   bookmarkedIds?: Set<string>;
   /** Extra CSS classes for the root element. */
   className?: string;
-  /** Shows descriptions on the one-card layout and the two promoted cards in a five-card layout. */
-  showFeaturedExcerpts?: boolean;
 }
 
 /**
- * Renders one full-width editorial source band whose card grid adapts to the available article count.
+ * Renders one stable generic source grid whenever a source does not need a bespoke editorial composition.
  * @param props - Source identity, persisted articles, and optional personalization callbacks.
- * @returns Nothing for an empty source, otherwise a headed source band with mobile scrolling and balanced desktop rows.
+ * @returns Nothing for an empty source, otherwise a headed one-to-three-column article grid.
  * @example
- * <ContentSection icon="📰" title="Tech News" articles={articles} />
+ * <ContentSection title="Tech News" articles={articles} />
  */
 export function ContentSection({
-  icon,
   title,
   articles,
   viewAllHref,
@@ -42,7 +37,6 @@ export function ContentSection({
   onHide,
   bookmarkedIds = new Set(),
   className,
-  showFeaturedExcerpts = false,
 }: ContentSectionProps) {
   if (articles.length === 0) return null;
 
@@ -55,17 +49,16 @@ export function ContentSection({
       data-layout="editorial-band"
       className={cn("flex min-w-0 flex-col gap-3", className)}
     >
-      <SectionHeader icon={icon} title={title} viewAllHref={viewAllHref} />
+      <SectionHeader title={title} viewAllHref={viewAllHref} />
 
-      {/* Mobile keeps each source compact; wider screens distribute the same cards across a balanced editorial row. */}
+      {/* Generic sources stay in document flow; only the dedicated video rail scrolls horizontally. */}
       <div
         className={cn(
-          "scrollbar-none flex gap-4 overflow-x-auto pb-2",
-          "sm:grid sm:overflow-x-visible sm:pb-0",
-          articleCount > 1 && "sm:grid-cols-2",
+          "grid grid-cols-1 gap-4",
+          articleCount >= 2 && "sm:grid-cols-2",
           articleCount === 3 && "lg:grid-cols-3",
-          articleCount === 4 && "xl:grid-cols-4",
-          articleCount === 5 && "lg:grid-cols-3 xl:grid-cols-6",
+          articleCount === 4 && "lg:grid-cols-2",
+          articleCount === 5 && "lg:grid-cols-6",
         )}
         data-layout="article-grid"
         data-article-count={articleCount}
@@ -74,11 +67,10 @@ export function ContentSection({
           <div
             key={article.id}
             className={cn(
-              "w-[68vw] shrink-0 sm:w-auto",
-              articleCount === 1 && "w-full",
-              articleCount === 5 && "xl:col-span-2",
-              // The final two cards share the second row instead of leaving a single orphan card.
-              articleCount === 5 && articleIndex >= 3 && "xl:col-span-3",
+              "h-full",
+              // Five stories balance as three cards above two wider cards instead of leaving an orphan.
+              articleCount === 5 &&
+                (articleIndex < 3 ? "lg:col-span-2" : "lg:col-span-3"),
             )}
           >
             <ArticleCard
@@ -86,12 +78,7 @@ export function ContentSection({
               onBookmark={onBookmark}
               onHide={onHide}
               isBookmarked={bookmarkedIds.has(article.id)}
-              layout={articleCount === 1 ? "wide" : "vertical"}
-              showExcerpt={
-                showFeaturedExcerpts &&
-                (articleCount === 1 ||
-                  (articleCount === 5 && articleIndex >= 3))
-              }
+              presentation={articleCount === 1 ? "wide" : "standard"}
             />
           </div>
         ))}

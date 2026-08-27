@@ -22,19 +22,22 @@ test.describe("Share Menu", () => {
       await shareBtn.click();
 
       // Expanded: X, Bluesky, Copy Link buttons should appear
-      await expect(
-        firstArticle.getByLabel("Share to X").first(),
-      ).toBeVisible({ timeout: 3000 });
+      await expect(firstArticle.getByLabel("Share to X").first()).toBeVisible({
+        timeout: 3000,
+      });
       await expect(
         firstArticle.getByLabel("Share to Bluesky").first(),
       ).toBeVisible({ timeout: 3000 });
-      await expect(
-        firstArticle.getByLabel("Copy link").first(),
-      ).toBeVisible({ timeout: 3000 });
+      await expect(firstArticle.getByLabel("Copy link").first()).toBeVisible({
+        timeout: 3000,
+      });
     }
   });
 
-  test("copy link button copies URL to clipboard", async ({ page, context }) => {
+  test("copy link button copies URL to clipboard", async ({
+    page,
+    context,
+  }) => {
     // Grant clipboard permissions
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
@@ -54,9 +57,9 @@ test.describe("Share Menu", () => {
       await copyBtn.click();
 
       // Button should change to "Link copied" state
-      await expect(
-        firstArticle.getByLabel("Link copied").first(),
-      ).toBeVisible({ timeout: 3000 });
+      await expect(firstArticle.getByLabel("Link copied").first()).toBeVisible({
+        timeout: 3000,
+      });
 
       // Verify clipboard content
       const clipboardText = await page.evaluate(() =>
@@ -64,6 +67,49 @@ test.describe("Share Menu", () => {
       );
       expect(clipboardText).toMatch(/^https?:\/\//);
     }
+  });
+
+  test("keyboard focus follows the visible share action order", async ({
+    page,
+  }) => {
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    const shareButton = firstArticle.getByLabel("Share article").first();
+    await firstArticle.hover();
+    await shareButton.focus();
+
+    // Act
+    await shareButton.press("Enter");
+    await page.keyboard.press("Tab");
+
+    // Assert
+    await expect(firstArticle.getByLabel("Share to X").first()).toBeFocused();
+  });
+
+  test("clipboard denial reports an error without showing copied state", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: () => Promise.reject(new Error("Clipboard denied")),
+        },
+      });
+    });
+    await page.reload();
+    await waitForPageReady(page);
+    const firstArticle = page.locator("article").first();
+    await firstArticle.hover();
+    await firstArticle.getByLabel("Share article").first().click();
+
+    // Act
+    await firstArticle.getByLabel("Copy link").first().click();
+
+    // Assert
+    await expect(page.getByText("Could not copy link")).toBeVisible();
+    await expect(firstArticle.getByLabel("Link copied")).toHaveCount(0);
   });
 
   test("share to X opens new window with correct intent URL", async ({
@@ -92,6 +138,30 @@ test.describe("Share Menu", () => {
     }
   });
 
+  test("share to Bluesky opens a compose window with the article", async ({
+    page,
+  }) => {
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    const sharedTitle = await firstArticle
+      .locator("[data-article-headline]")
+      .first()
+      .innerText();
+    await firstArticle.hover();
+    await firstArticle.getByLabel("Share article").first().click();
+    const popupPromise = page.waitForEvent("popup", { timeout: 5000 });
+
+    // Act
+    await firstArticle.getByLabel("Share to Bluesky").first().click();
+
+    // Assert
+    const popup = await popupPromise;
+    expect(popup.url()).toContain("bsky.app/intent/compose");
+    expect(new URL(popup.url()).searchParams.get("text")).toContain(
+      sharedTitle,
+    );
+  });
+
   test("clicking outside share menu closes it", async ({ page }) => {
     const articles = page.locator("article");
     const count = await articles.count();
@@ -105,17 +175,17 @@ test.describe("Share Menu", () => {
       await shareBtn.click();
 
       // Verify expanded
-      await expect(
-        firstArticle.getByLabel("Share to X").first(),
-      ).toBeVisible({ timeout: 3000 });
+      await expect(firstArticle.getByLabel("Share to X").first()).toBeVisible({
+        timeout: 3000,
+      });
 
       // Click outside (on page body)
       await page.locator("body").click({ position: { x: 10, y: 10 } });
 
       // Share targets should disappear (button reverts to "Share article")
-      await expect(
-        firstArticle.getByLabel("Share to X"),
-      ).toBeHidden({ timeout: 3000 });
+      await expect(firstArticle.getByLabel("Share to X")).toBeHidden({
+        timeout: 3000,
+      });
     }
   });
 });

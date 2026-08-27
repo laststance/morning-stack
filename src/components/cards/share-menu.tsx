@@ -46,6 +46,8 @@ export interface ShareMenuProps {
   onToggle: () => void;
   /** Called after a successful copy-to-clipboard. */
   onCopied?: () => void;
+  /** Called when browser clipboard access fails. */
+  onCopyError?: () => void;
   /** Size variant matching the parent's button sizing. */
   size?: "sm" | "md";
   /** Extra CSS classes for the root container. */
@@ -63,14 +65,15 @@ export function ShareMenu({
   isExpanded,
   onToggle,
   onCopied,
+  onCopyError,
   size = "md",
   className,
 }: ShareMenuProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  const buttonSizeClassName =
-    size === "sm" ? "size-11 lg:size-7" : "size-11 lg:size-8";
+  // Visual icon scale varies, while every desktop hit target stays at least 40px.
+  const buttonSizeClassName = "size-11 lg:size-10";
   const iconSizeClassName = size === "sm" ? "size-3.5" : "size-4";
 
   // ── Click-outside handler ──
@@ -139,28 +142,50 @@ export function ShareMenu({
         onCopied?.();
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        // Fallback: some browsers block clipboard in non-secure contexts
-        onCopied?.();
+        // Report denied clipboard access without claiming that the link was copied.
+        onCopyError?.();
       }
     },
-    [article.url, onCopied],
+    [article.url, onCopied, onCopyError],
   );
 
   const buttonBase = cn(
     "flex items-center justify-center rounded-md backdrop-blur-sm transition-colors",
     "bg-ms-bg-primary/70 text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
+    "focus-visible:ring-ms-accent/60 focus-visible:ring-2 focus-visible:outline-none",
     buttonSizeClassName,
   );
 
   return (
-    <div ref={containerRef} className={cn("flex gap-1", className)}>
-      {/* Expanded share targets — animate in from right */}
+    <div
+      ref={containerRef}
+      className={cn("contents lg:flex lg:gap-1", className)}
+    >
+      {/* DOM and visual order match so Tab moves from Share to the revealed targets. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className={cn(
+          buttonBase,
+          "order-2 lg:order-none",
+          isExpanded && "bg-ms-accent/90 text-white",
+        )}
+        aria-label={isExpanded ? "Close share menu" : "Share article"}
+        aria-expanded={isExpanded}
+      >
+        <Share2 className={iconSizeClassName} />
+      </button>
+
+      {/* Expanded share targets animate in after their controlling button. */}
       {isExpanded && (
-        <div className="animate-in slide-in-from-right-2 fade-in flex gap-1 duration-200">
+        <div className="lg:animate-in lg:slide-in-from-right-2 lg:fade-in contents motion-reduce:animate-none motion-reduce:transition-none lg:flex lg:gap-1 lg:duration-200">
           <button
             type="button"
             onClick={shareToX}
-            className={buttonBase}
+            className={cn(buttonBase, "order-4 lg:order-none")}
             aria-label="Share to X"
           >
             <XIcon className={iconSizeClassName} />
@@ -169,7 +194,7 @@ export function ShareMenu({
           <button
             type="button"
             onClick={shareToBluesky}
-            className={buttonBase}
+            className={cn(buttonBase, "order-5 lg:order-none")}
             aria-label="Share to Bluesky"
           >
             <BlueskyIcon className={iconSizeClassName} />
@@ -178,7 +203,11 @@ export function ShareMenu({
           <button
             type="button"
             onClick={copyLink}
-            className={cn(buttonBase, copied && "text-green-400")}
+            className={cn(
+              buttonBase,
+              "order-6 lg:order-none",
+              copied && "text-green-400",
+            )}
             aria-label={copied ? "Link copied" : "Copy link"}
           >
             {copied ? (
@@ -189,20 +218,6 @@ export function ShareMenu({
           </button>
         </div>
       )}
-
-      {/* Share toggle button */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        className={cn(buttonBase, isExpanded && "bg-ms-accent/90 text-white")}
-        aria-label={isExpanded ? "Close share menu" : "Share article"}
-        aria-expanded={isExpanded}
-      >
-        <Share2 className={iconSizeClassName} />
-      </button>
     </div>
   );
 }

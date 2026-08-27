@@ -26,7 +26,6 @@ export function TechSection({
 }: TechSectionProps) {
   return (
     <ContentSection
-      icon="📰"
       title="Tech News"
       articles={articles}
       onBookmark={onBookmark}

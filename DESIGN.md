@@ -1,6 +1,6 @@
 # MorningStack Design System
 
-Status: inferred and validated against the rendered product on 2026-08-14. Treat this as the current baseline; update it when a product-wide visual decision changes.
+Status: inferred and validated against the rendered product on 2026-08-28. Treat this as the current baseline; update it when a product-wide visual decision changes.
 
 ## Product Character
 
@@ -48,6 +48,7 @@ Typeface replacement is a product identity decision. Do not mix in a second edit
 - Build layout from the observed 4px rhythm, favoring 4, 8, 12, 16, 24, and 32px intervals.
 - Use the shared radius scale rooted at `0.625rem`; historical navigation should not introduce a separate shape language.
 - Preserve generous separation between the Date Rail, lead story, and source sections.
+- Keep Home inside the centered 1240px editorial column; the wider 1440px global header shell remains a separate product-wide decision.
 - Avoid oversized empty card shells unless media or multiple stories justify the space.
 
 ## Edition Navigation
@@ -65,6 +66,9 @@ The Date Rail is the single visual anchor for time travel.
 ## Cards and Article Actions
 
 - Article cards expose source, recency, score, title, and reading actions without competing with the headline.
+- Promote one lead story and up to three supporting headlines, then remove those stories from their source bands so each article has one visual home.
+- Give each source the composition its content needs: up to three descriptive GitHub cards plus compact overflow, up to two visual Hatena leads plus ranked overflow, a ranked Hacker News list, and a three-item YouTube rail.
+- Balance generic one-to-five-story grids without leaving a four-story 3+1 orphan row; social rows keep equal card heights when copy lengths differ.
 - On touch layouts, bookmark, share, and hide controls remain visible in a footer row with at least 44×44px targets.
 - On desktop, the same row may use compact 28–32px controls and appear on card hover or keyboard focus.
 - Expanded share actions must retain the touch target size and remain inside the card at 320px width.
@@ -76,6 +80,7 @@ The Date Rail is the single visual anchor for time travel.
 - Mobile order follows task priority: edition date, lead story, repository, current widgets, then remaining source sections.
 - The mobile header expands in normal document flow so the Date Rail does not jump behind an overlay.
 - No horizontal scrolling is acceptable for the Date Rail, article actions, calendars, or recovery states.
+- On cold navigation, reserve only the Date Rail, lead story, and first source band; avoid skeletons for the entire edition.
 
 ## Accessibility and Motion
 

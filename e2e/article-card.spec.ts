@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForPageReady } from "./fixtures";
+import { E2E_CURRENT_SHARED_ARTICLE_URL, waitForPageReady } from "./fixtures";
 
 test.describe("Article Card Interactions", () => {
   test.beforeEach(async ({ page }) => {
@@ -10,101 +10,196 @@ test.describe("Article Card Interactions", () => {
   test("article cards link to external URLs with target _blank", async ({
     page,
   }) => {
-    // Find any article card link on the page
-    const articleLinks = page.locator('article a[target="_blank"]');
-    const count = await articleLinks.count();
+    // Arrange
+    const featuredStory = page.getByRole("region", { name: "Featured story" });
+    const featuredStoryLink = featuredStory.locator(
+      'a[data-article-headline][target="_blank"]',
+    );
 
-    if (count > 0) {
-      // Verify external links have correct attributes
-      const firstLink = articleLinks.first();
-      await expect(firstLink).toHaveAttribute("target", "_blank");
-      await expect(firstLink).toHaveAttribute("rel", /noopener/);
+    // Act
+    const href = await featuredStoryLink.getAttribute("href");
 
-      // Verify the href is a valid URL
-      const href = await firstLink.getAttribute("href");
-      expect(href).toBeTruthy();
-      expect(href).toMatch(/^https?:\/\//);
-    } else {
-      // No edition data — check fallback is showing
-      await expect(page.getByText("No edition available")).toBeVisible();
-    }
+    // Assert
+    await expect(featuredStoryLink).toHaveAttribute("target", "_blank");
+    await expect(featuredStoryLink).toHaveAttribute("rel", /noopener/);
+    expect(href).toBe(E2E_CURRENT_SHARED_ARTICLE_URL);
   });
 
   test("article card shows source badge", async ({ page }) => {
-    // Article cards should have source badges with known source names
-    const knownSources = [
-      "Hacker News",
-      "GitHub",
-      "Reddit",
-      "Tech News",
-      "Hatena",
-      "Bluesky",
-      "YouTube",
-      "World News",
-      "Product Hunt",
-    ];
+    // Arrange / Act
+    const leadStory = page.getByRole("region", { name: "Featured story" });
 
-    const articles = page.locator("article");
-    const count = await articles.count();
-
-    if (count > 0) {
-      // At least one article card should have a recognizable source badge
-      let foundSource = false;
-      for (const source of knownSources) {
-        const badge = page.locator("article").getByText(source, { exact: true }).first();
-        if (await badge.isVisible().catch(() => false)) {
-          foundSource = true;
-          break;
-        }
-      }
-      expect(foundSource).toBeTruthy();
-    }
+    // Assert
+    await expect(
+      leadStory.getByText("Hacker News", { exact: true }),
+    ).toBeVisible();
   });
 
-  test("bookmark button is visible on article card hover", async ({
-    page,
-  }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+  test("bookmark button is visible on article card hover", async ({ page }) => {
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      // Hover over the card to reveal action buttons
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for bookmark button (Star icon with aria-label)
-      const bookmarkBtn = firstArticle.getByLabel(/bookmark/i).first();
-      await expect(bookmarkBtn).toBeVisible({ timeout: 3000 });
-    }
+    // Assert
+    const actions = firstArticle.locator("[data-article-actions]");
+    await expect(actions).toHaveCSS("opacity", "1");
+    await expect(actions.getByLabel(/bookmark/i).first()).toBeVisible();
   });
 
   test("share button is visible on article card hover", async ({ page }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for share button
-      const shareBtn = firstArticle.getByLabel(/share/i).first();
-      await expect(shareBtn).toBeVisible({ timeout: 3000 });
-    }
+    // Assert
+    const actions = firstArticle.locator("[data-article-actions]");
+    await expect(actions).toHaveCSS("opacity", "1");
+    await expect(actions.getByLabel(/share/i).first()).toBeVisible();
   });
 
   test("hide options button is visible on article card hover", async ({
     page,
   }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for hide button
-      const hideBtn = firstArticle.getByLabel(/hide/i).first();
-      await expect(hideBtn).toBeVisible({ timeout: 3000 });
+    // Assert
+    const actions = firstArticle.locator("[data-article-actions]");
+    await expect(actions).toHaveCSS("opacity", "1");
+    await expect(actions.getByLabel(/hide/i).first()).toBeVisible();
+  });
+
+  test("lead and section headings form one text-only editorial outline", async ({
+    page,
+  }) => {
+    // Arrange / Act
+    const pageHeadings = page.locator("main h1");
+    const sectionHeadings = page.locator("main h2");
+
+    // Assert
+    await expect(pageHeadings).toHaveCount(1);
+    await expect(pageHeadings).toHaveText("Current shared story");
+    await expect(
+      sectionHeadings.filter({ hasText: /🐙|🔶|📌|🎬/u }),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("Article Action Consistency", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("five editorial card variants expose the same touch-safe actions", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+    const variants = [
+      "lead",
+      "media-three-column",
+      "compact",
+      "ranked",
+      "video-rail",
+    ];
+
+    // Act
+    const actionSizes = [];
+    for (const variant of variants) {
+      const article = page
+        .locator(`[data-article-variant="${variant}"]`)
+        .first();
+      const actions = article.locator("[data-article-actions] button");
+      await expect(actions, `${variant} actions`).toHaveCount(3);
+      actionSizes.push({
+        variant,
+        count: await actions.count(),
+        boxes: await Promise.all([
+          actions.nth(0).boundingBox(),
+          actions.nth(1).boundingBox(),
+          actions.nth(2).boundingBox(),
+        ]),
+      });
+    }
+
+    // Assert
+    expect(
+      actionSizes.map(({ variant, count }) => ({ variant, count })),
+    ).toEqual([
+      { variant: "lead", count: 3 },
+      { variant: "media-three-column", count: 3 },
+      { variant: "compact", count: 3 },
+      { variant: "ranked", count: 3 },
+      { variant: "video-rail", count: 3 },
+    ]);
+    for (const { boxes } of actionSizes) {
+      for (const box of boxes) {
+        // Preserve the 44px target while tolerating subpixel browser rounding.
+        expect(box?.width).toBeGreaterThanOrEqual(43);
+        expect(box?.height).toBeGreaterThanOrEqual(43);
+      }
+    }
+  });
+
+  test("promoted Hacker News stories retain the remaining story's original source rank", async ({
+    page,
+  }) => {
+    // Arrange / Act
+    await page.goto("/");
+    await waitForPageReady(page);
+    const hackerNewsBand = page.getByRole("region", { name: "Hacker News" });
+
+    // Assert
+    await expect(hackerNewsBand.getByLabel("Rank 5")).toBeVisible();
+    await expect(
+      hackerNewsBand.getByText("Fifth Hacker News story"),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Tablet Article Action Containment", () => {
+  test.use({ viewport: { width: 768, height: 1024 } });
+
+  test("every rendered card keeps all six expanded actions inside its 768px layout boundary", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+    const articles = page.locator("main article:visible");
+    const articleCount = await articles.count();
+
+    // Act / Assert
+    expect(articleCount).toBeGreaterThan(0);
+    for (let index = 0; index < articleCount; index += 1) {
+      const article = articles.nth(index);
+      await article.getByRole("button", { name: "Share article" }).click();
+      const articleBox = await article.boundingBox();
+      const actionButtons = article.locator("[data-article-actions] button");
+      const actionCount = await actionButtons.count();
+
+      expect(articleBox).not.toBeNull();
+      expect(actionCount).toBe(6);
+      for (let actionIndex = 0; actionIndex < actionCount; actionIndex += 1) {
+        const actionBox = await actionButtons.nth(actionIndex).boundingBox();
+        expect(actionBox).not.toBeNull();
+        expect(actionBox!.x).toBeGreaterThanOrEqual(articleBox!.x);
+        expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
+          articleBox!.x + articleBox!.width,
+        );
+        expect(actionBox!.y).toBeGreaterThanOrEqual(articleBox!.y);
+        expect(actionBox!.y + actionBox!.height).toBeLessThanOrEqual(
+          articleBox!.y + articleBox!.height,
+        );
+      }
+
+      await article.getByRole("button", { name: "Close share menu" }).click();
     }
   });
 });
@@ -116,26 +211,18 @@ test.describe("Bookmark Feature", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    await firstArticle.hover();
+    const bookmarkButton = firstArticle.getByLabel(/bookmark/i).first();
+    const navigationPromise = page.waitForURL(/\/login/, { timeout: 5000 });
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await bookmarkButton.click();
+    await navigationPromise;
 
-      const bookmarkBtn = firstArticle.getByLabel(/bookmark/i).first();
-
-      // Set up navigation listener before clicking
-      const navigationPromise = page.waitForURL(/\/login/, {
-        timeout: 5000,
-      });
-
-      await bookmarkBtn.click();
-
-      // Should redirect to login page
-      await navigationPromise;
-      expect(page.url()).toContain("/login");
-    }
+    // Assert
+    expect(page.url()).toContain("/login");
   });
 });
 
@@ -144,27 +231,16 @@ test.describe("Hide Feature", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    await firstArticle.hover();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.getByLabel("Hide options").first().click();
 
-      // Click the hide button to open dropdown
-      const hideBtn = firstArticle.getByLabel("Hide options").first();
-      await hideBtn.click();
-
-      // Dropdown should show three hide options
-      await expect(page.getByText("Hide this article")).toBeVisible({
-        timeout: 3000,
-      });
-      await expect(page.getByText(/Hide from /)).toBeVisible({
-        timeout: 3000,
-      });
-      await expect(page.getByText(/Hide topic:/)).toBeVisible({
-        timeout: 3000,
-      });
-    }
+    // Assert
+    await expect(page.getByText("Hide this article")).toBeVisible();
+    await expect(page.getByText(/Hide from /)).toBeVisible();
+    await expect(page.getByText(/Hide topic:/)).toBeVisible();
   });
 });

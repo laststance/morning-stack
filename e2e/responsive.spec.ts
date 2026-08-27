@@ -1,6 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { waitForPageReady } from "./fixtures";
 
+const EXPECTED_EDITORIAL_SECTION_ORDER = [
+  "Featured story",
+  "GitHub Trending",
+  "Daily widgets",
+  "Supporting headlines",
+  "Tech News",
+  "Hacker News",
+  "Reddit",
+  "Social Media",
+  "Pull Requests",
+  "Hatena Bookmark",
+];
+
 test.describe("Responsive Layout — Mobile (<640px)", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
@@ -52,17 +65,28 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
   });
 
   test("main content is single column on mobile", async ({ page }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
+    // Act
     const main = page.locator("main");
     const mainBox = await main.boundingBox();
-    expect(mainBox).toBeTruthy();
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
 
-    // Main content should be full-width (minus padding)
-    if (mainBox) {
-      expect(mainBox.width).toBeLessThanOrEqual(375);
-    }
+    // Assert
+    expect(mainBox?.width).toBe(375);
+    expect(sectionNames).toEqual(EXPECTED_EDITORIAL_SECTION_ORDER);
+    await expect(page.locator('[data-layout="video-rail"]')).toHaveCSS(
+      "overflow-x",
+      "auto",
+    );
   });
 });
 
@@ -95,18 +119,38 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     const githubBand = page.getByRole("region", {
       name: "GitHub Trending",
     });
-    const hackerNewsBand = page.getByRole("region", { name: "Hacker News" });
+    const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
+    const youtubeRail = page.locator('[data-layout="video-rail"]');
     const githubBox = await githubBand.boundingBox();
-    const hackerNewsBox = await hackerNewsBand.boundingBox();
+    const hatenaBox = await hatenaBand.boundingBox();
+    const githubColumns = await githubBand
+      .locator("div.grid")
+      .first()
+      .evaluate((grid) =>
+        getComputedStyle(grid).gridTemplateColumns.split(" "),
+      );
+    const youtubeColumns = await youtubeRail.evaluate((grid) =>
+      getComputedStyle(grid).gridTemplateColumns.split(" "),
+    );
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
 
     // Assert
+    expect(sectionNames).toEqual(EXPECTED_EDITORIAL_SECTION_ORDER);
     expect(githubBox).not.toBeNull();
-    expect(hackerNewsBox).not.toBeNull();
+    expect(hatenaBox).not.toBeNull();
     expect(githubBox?.width).toBeGreaterThanOrEqual(700);
-    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(700);
-    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+    expect(hatenaBox?.width).toBeGreaterThanOrEqual(700);
+    expect(hatenaBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
+    expect(githubColumns).toHaveLength(3);
+    expect(youtubeColumns).toHaveLength(3);
   });
 });
 
@@ -153,22 +197,19 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     const githubBand = editorialFlow.getByRole("region", {
       name: "GitHub Trending",
     });
-    const hackerNewsBand = editorialFlow.getByRole("region", {
-      name: "Hacker News",
+    const hatenaBand = editorialFlow.getByRole("region", {
+      name: "Hatena Bookmark",
     });
     const githubBox = await githubBand.boundingBox();
-    const hackerNewsBox = await hackerNewsBand.boundingBox();
+    const hatenaBox = await hatenaBand.boundingBox();
 
     // Assert
     await expect(editorialFlow).toBeVisible();
     await expect(githubBand).toHaveAttribute("data-layout", "editorial-band");
-    await expect(hackerNewsBand).toHaveAttribute(
-      "data-layout",
-      "editorial-band",
-    );
-    expect(githubBox?.width).toBeGreaterThanOrEqual(1180);
-    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(1180);
-    expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
+    await expect(hatenaBand).toHaveAttribute("data-layout", "editorial-band");
+    expect(githubBox?.width).toBeGreaterThanOrEqual(1160);
+    expect(hatenaBox?.width).toBeGreaterThanOrEqual(1160);
+    expect(hatenaBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
   });
@@ -181,20 +222,72 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     await waitForPageReady(page);
 
     // Act
-    const featuredStories = page.getByRole("region", {
-      name: "Featured stories",
+    const featuredStory = page.getByRole("region", {
+      name: "Featured story",
     });
     const githubBand = page.getByRole("region", {
       name: "GitHub Trending",
     });
+    const githubImages = githubBand.locator(
+      '[data-article-variant="media-three-column"] img',
+    );
 
     // Assert
-    await expect(featuredStories.locator("[data-article-summary]")).toHaveText(
+    await expect(featuredStory.locator("[data-article-summary]")).toHaveText(
       "Featured Hacker News discussion submitted by current. The community has added 41 comments so far.",
     );
-    await expect(githubBand.locator("[data-article-summary]")).toHaveText(
-      "Current GitHub article",
+    await expect(
+      githubBand.locator("[data-article-summary]").first(),
+    ).toHaveText(
+      "A focused TypeScript toolkit for assembling fast developer briefings.",
     );
+    await expect(githubImages).toHaveCount(3);
+    await expect(githubImages.nth(0)).toHaveAttribute("loading", "eager");
+    await expect(githubImages.nth(1)).toHaveAttribute("loading", "lazy");
+    await expect(githubImages.nth(2)).toHaveAttribute("loading", "lazy");
+  });
+
+  test("keeps one editorial order while source-specific compositions absorb five stories", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+
+    // Act
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
+    const githubBand = page.getByRole("region", { name: "GitHub Trending" });
+    const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
+
+    // Assert
+    expect(sectionNames.slice(0, 4)).toEqual([
+      "Featured story",
+      "GitHub Trending",
+      "Daily widgets",
+      "Supporting headlines",
+    ]);
+    const headlineUrls = await page
+      .locator("[data-article-headline]")
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    expect(new Set(headlineUrls).size).toBe(headlineUrls.length);
+    await expect(
+      githubBand.locator('[data-article-variant="media-three-column"]'),
+    ).toHaveCount(3);
+    await expect(
+      githubBand.locator('[data-article-variant="compact"]'),
+    ).toHaveCount(2);
+    await expect(
+      hatenaBand.locator('[data-article-variant="media-two-column"]'),
+    ).toHaveCount(2);
+    await expect(
+      hatenaBand.locator('[data-article-variant="compact"]'),
+    ).toHaveCount(3);
   });
 });
 
@@ -202,16 +295,16 @@ test.describe("Responsive Layout — Wide (1440px+)", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
   test("content is constrained to max-width", async ({ page }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
+    // Act
     const main = page.locator("main");
     const mainBox = await main.boundingBox();
 
-    if (mainBox) {
-      // max-w-[1440px] constrains content width
-      expect(mainBox.width).toBeLessThanOrEqual(1440 + 64); // + padding
-    }
+    // Assert
+    expect(mainBox?.width).toBe(1240);
   });
 });
 

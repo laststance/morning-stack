@@ -23,6 +23,42 @@ import { civilDateToCalendarDate } from "@/lib/edition-date/civil-date-to-calend
 import { EDITION_TIME_ZONE } from "@/lib/edition-date/constants";
 import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
 
+export interface EditionDateNavigatorProps {
+  /** URL-selected civil date used as the sole navigation truth. */
+  requestedDate: string;
+  /** URL-selected edition type retained across all date actions. */
+  requestedEditionType: EditionType;
+  /** Current JST civil date defining the upper navigation boundary. */
+  today: string;
+  /** First published date, or null when the independent bounds query failed. */
+  earliestPublishedDate: string | null;
+  /** Presentation-only latest edition rendered when today's requested edition is missing. */
+  fallbackEdition?: { date: string; type: EditionType } | null;
+}
+
+/**
+ * Formats the Date Rail context whenever the selected URL is today, historical, or showing a latest-edition fallback.
+ * @param requestedDate - URL-selected civil date retained as navigation truth.
+ * @param today - Current JST civil date used to distinguish today from history.
+ * @param fallbackEdition - Older published edition rendered without rewriting the requested URL.
+ * @returns Exact reader-facing context for the selected Date Rail date.
+ * @example
+ * formatEditionContextLabel("2030-01-15", "2030-01-15", { date: "2030-01-14", type: "morning" })
+ */
+export function formatEditionContextLabel(
+  requestedDate: string,
+  today: string,
+  fallbackEdition: { date: string; type: EditionType } | null,
+): string {
+  if (fallbackEdition) {
+    const editionLabel =
+      fallbackEdition.type === "morning" ? "Morning" : "Evening";
+    return `Latest available: ${formatEditionDate(fallbackEdition.date)} ${editionLabel}`;
+  }
+
+  return requestedDate === today ? "Today" : "Historical edition";
+}
+
 /**
  * Renders Previous/date-picker/Next controls below Home Header whenever bounds and requested-date props are server-confirmed.
  * @param props - Requested date, today's JST date, and independent archive-bound result.
@@ -35,12 +71,8 @@ export function EditionDateNavigator({
   requestedEditionType,
   today,
   earliestPublishedDate,
-}: {
-  requestedDate: string;
-  requestedEditionType: EditionType;
-  today: string;
-  earliestPublishedDate: string | null;
-}) {
+  fallbackEdition = null,
+}: EditionDateNavigatorProps) {
   const navigation = useHomeNavigation();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const isBoundsAvailable = earliestPublishedDate !== null;
@@ -55,6 +87,14 @@ export function EditionDateNavigator({
     !navigation || navigation.isPending || requestedDate >= today;
   const isDatePickerDisabled =
     !navigation || navigation.isPending || !isBoundsAvailable;
+  const editionContextLabel = formatEditionContextLabel(
+    requestedDate,
+    today,
+    fallbackEdition,
+  );
+  const datePickerAriaLabel = fallbackEdition
+    ? `Choose edition date for ${requestedEditionType}, requested ${formatEditionDate(requestedDate)}; showing ${formatEditionDate(fallbackEdition.date)} ${fallbackEdition.type}`
+    : `Choose edition date for ${requestedEditionType}, currently ${formatEditionDate(requestedDate)}`;
 
   /**
    * Navigates after DayPicker commits an enabled date, then closes Popover so focus returns to its trigger.
@@ -106,7 +146,7 @@ export function EditionDateNavigator({
               variant="outline"
               disabled={isDatePickerDisabled}
               className="data-[state=open]:border-ms-accent h-auto min-h-11 min-w-0 justify-center px-2 py-1.5"
-              aria-label={`Choose edition date for ${requestedEditionType}, currently ${formatEditionDate(requestedDate)}`}
+              aria-label={datePickerAriaLabel}
             >
               {navigation?.isPending && navigation.activeControl === "date" ? (
                 <Spinner
@@ -120,8 +160,8 @@ export function EditionDateNavigator({
                 <span className="truncate font-medium">
                   {formatEditionDate(requestedDate)}
                 </span>
-                <span className="text-ms-text-muted text-xs font-normal">
-                  {requestedDate === today ? "Today" : "Historical edition"}
+                <span className="text-ms-text-muted max-w-full truncate text-xs font-normal">
+                  {editionContextLabel}
                 </span>
               </span>
             </Button>
@@ -153,6 +193,12 @@ export function EditionDateNavigator({
             />
           </PopoverContent>
         </Popover>
+
+        {fallbackEdition && (
+          <span role="status" className="sr-only">
+            {editionContextLabel}
+          </span>
+        )}
 
         <Button
           type="button"

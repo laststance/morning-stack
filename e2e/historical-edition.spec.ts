@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openMobileMenu, waitForPageReady } from "./fixtures";
+
 const TODAY = "2030-01-15";
 const YESTERDAY = "2030-01-14";
 const EARLIEST_ARCHIVE_DATE = "2030-01-12";
@@ -11,10 +13,11 @@ test.describe("Historical edition navigation", () => {
   }) => {
     // Arrange
     await page.goto("/?edition=morning");
+    await waitForPageReady(page);
 
     // Assert current
     await expect(page.getByText("Current shared story").first()).toBeVisible();
-    await expect(page.getByLabel("Stock ticker")).toBeVisible();
+    await expect(page.getByLabel("Stock ticker").first()).toBeVisible();
     await expect(page.getByText("Weather", { exact: true })).toBeVisible();
     await expect(page.getByText("Markets", { exact: true })).toBeVisible();
 
@@ -44,6 +47,7 @@ test.describe("Historical edition navigation", () => {
   test("edition tabs retain the selected historical date", async ({ page }) => {
     // Arrange
     await page.goto(`/?date=${YESTERDAY}&edition=morning`);
+    await waitForPageReady(page);
 
     // Act
     await clickEditionTab(page, /Evening/i);
@@ -51,7 +55,11 @@ test.describe("Historical edition navigation", () => {
     // Assert
     await expect(page).toHaveURL(`/?date=${YESTERDAY}&edition=evening`);
     await expect(
-      page.getByText(`No Evening edition for Jan 14, 2030`),
+      page.getByRole("heading", {
+        level: 1,
+        name: "No Evening edition for Jan 14, 2030",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(page.getByLabel("Stock ticker")).toHaveCount(0);
   });
@@ -111,7 +119,11 @@ test.describe("Historical edition navigation", () => {
       `/?date=${EARLIEST_ARCHIVE_DATE}&edition=evening`,
     );
     await expect(
-      page.getByText("No Evening edition for Jan 12, 2030"),
+      page.getByRole("heading", {
+        level: 1,
+        name: "No Evening edition for Jan 12, 2030",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /^Previous day,/ }),
@@ -190,8 +202,8 @@ test.describe("Historical edition navigation", () => {
     await page.setViewportSize({ width: 320, height: 812 });
     await page.goto(`/?date=${YESTERDAY}&edition=morning`);
     const historicalStory = page
-      .getByRole("region", { name: "Hacker News" })
-      .locator("article");
+      .locator('article[data-article-variant="lead"]:visible')
+      .first();
     const bookmarkButton = historicalStory.getByRole("button", {
       name: "Bookmark",
     });
@@ -207,6 +219,19 @@ test.describe("Historical edition navigation", () => {
     const shareBox = await shareButton.boundingBox();
     const hideBox = await hideButton.boundingBox();
     await shareButton.click();
+    const articleBox = await historicalStory.boundingBox();
+    const expandedActionBoxes = await Promise.all(
+      [
+        "Bookmark article",
+        "Share to X",
+        "Share to Bluesky",
+        "Copy link",
+        "Close share menu",
+        "Hide options",
+      ].map((label) =>
+        historicalStory.getByRole("button", { name: label }).boundingBox(),
+      ),
+    );
     const widths = await page.evaluate(() => ({
       client: document.documentElement.clientWidth,
       scroll: document.documentElement.scrollWidth,
@@ -220,6 +245,18 @@ test.describe("Historical edition navigation", () => {
     expect(shareBox?.height).toBeGreaterThanOrEqual(44);
     expect(hideBox?.width).toBeGreaterThanOrEqual(44);
     expect(hideBox?.height).toBeGreaterThanOrEqual(44);
+    expect(articleBox).not.toBeNull();
+    for (const actionBox of expandedActionBoxes) {
+      expect(actionBox).not.toBeNull();
+      expect(actionBox!.x).toBeGreaterThanOrEqual(articleBox!.x);
+      expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
+        articleBox!.x + articleBox!.width,
+      );
+      expect(actionBox!.y).toBeGreaterThanOrEqual(articleBox!.y);
+      expect(actionBox!.y + actionBox!.height).toBeLessThanOrEqual(
+        articleBox!.y + articleBox!.height,
+      );
+    }
     await expect(
       historicalStory.getByRole("button", { name: "Share to X" }),
     ).toBeVisible();
@@ -244,9 +281,10 @@ async function clickEditionTab(page: Page, label: RegExp): Promise<void> {
     return;
   }
 
-  await page.getByLabel("Open menu").click();
+  await openMobileMenu(page);
   await page
-    .getByLabel("Mobile navigation")
+    .locator('[aria-label="Mobile navigation"]:visible')
+    .first()
     .getByRole("tab", { name: label })
     .click();
 }

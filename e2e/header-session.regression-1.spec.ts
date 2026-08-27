@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { isMobileViewport, openMobileMenu } from "./fixtures";
+import { isMobileViewport, openMobileMenu, waitForPageReady } from "./fixtures";
 
 const E2E_SESSION_TOKEN = "e2e-session-token";
 const E2E_BASE_URL = `http://localhost:${process.env.E2E_PORT ?? "3199"}`;
@@ -39,14 +39,24 @@ test("authenticated readers see signed-in Header controls without a client sessi
 
   // Act
   await page.goto("/?edition=morning");
+  await waitForPageReady(page);
   if (isMobileViewport(page)) {
     await openMobileMenu(page);
   }
 
+  // Act: leaving and returning to the tab must not reintroduce Auth.js client polling.
+  const backgroundPage = await context.newPage();
+  await backgroundPage.bringToFront();
+  await page.bringToFront();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+
   // Assert
-  await expect(
-    page.getByRole("button", { name: /Sign out/ }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign out/ })).toBeVisible();
   await expect(
     page
       .locator("article")
@@ -56,4 +66,6 @@ test("authenticated readers see signed-in Header controls without a client sessi
   ).toBeVisible();
   expect(clientSessionRequests).toEqual([]);
   expect(authConsoleErrors).toEqual([]);
+
+  await backgroundPage.close();
 });

@@ -280,7 +280,7 @@ function HeroMainCard({
               target="_blank"
               rel="noopener noreferrer"
               data-article-headline
-              className="outline-none focus-visible:underline"
+              className="outline-none after:absolute after:inset-0 focus-visible:underline"
             >
               {article.title}
             </a>

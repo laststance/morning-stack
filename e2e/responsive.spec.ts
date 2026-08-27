@@ -52,17 +52,20 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
   });
 
   test("main content is single column on mobile", async ({ page }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
+    // Act
     const main = page.locator("main");
     const mainBox = await main.boundingBox();
-    expect(mainBox).toBeTruthy();
 
-    // Main content should be full-width (minus padding)
-    if (mainBox) {
-      expect(mainBox.width).toBeLessThanOrEqual(375);
-    }
+    // Assert
+    expect(mainBox?.width).toBe(375);
+    await expect(page.locator('[data-layout="video-rail"]')).toHaveCSS(
+      "overflow-x",
+      "auto",
+    );
   });
 });
 
@@ -166,8 +169,8 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
       "data-layout",
       "editorial-band",
     );
-    expect(githubBox?.width).toBeGreaterThanOrEqual(1180);
-    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(1180);
+    expect(githubBox?.width).toBeGreaterThanOrEqual(1160);
+    expect(hackerNewsBox?.width).toBeGreaterThanOrEqual(1160);
     expect(hackerNewsBox?.y).toBeGreaterThanOrEqual(
       (githubBox?.y ?? 0) + (githubBox?.height ?? 0),
     );
@@ -181,20 +184,62 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     await waitForPageReady(page);
 
     // Act
-    const featuredStories = page.getByRole("region", {
-      name: "Featured stories",
+    const featuredStory = page.getByRole("region", {
+      name: "Featured story",
     });
     const githubBand = page.getByRole("region", {
       name: "GitHub Trending",
     });
 
     // Assert
-    await expect(featuredStories.locator("[data-article-summary]")).toHaveText(
+    await expect(featuredStory.locator("[data-article-summary]")).toHaveText(
       "Featured Hacker News discussion submitted by current. The community has added 41 comments so far.",
     );
-    await expect(githubBand.locator("[data-article-summary]")).toHaveText(
-      "Current GitHub article",
+    await expect(
+      githubBand.locator("[data-article-summary]").first(),
+    ).toHaveText(
+      "A focused TypeScript toolkit for assembling fast developer briefings.",
     );
+  });
+
+  test("keeps one editorial order while source-specific compositions absorb five stories", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+
+    // Act
+    const sectionNames = await page
+      .locator(
+        'main section[aria-label], main aside[aria-label="Daily widgets"]',
+      )
+      .evaluateAll((sections) =>
+        sections.map((section) => section.getAttribute("aria-label")),
+      );
+    const githubBand = page.getByRole("region", { name: "GitHub Trending" });
+    const hatenaBand = page.getByRole("region", { name: "Hatena Bookmark" });
+
+    // Assert
+    expect(sectionNames.slice(0, 5)).toEqual([
+      "Featured story",
+      "GitHub Trending",
+      "Daily widgets",
+      "Supporting headlines",
+      "Hacker News",
+    ]);
+    await expect(
+      githubBand.locator('[data-article-variant="media-three-column"]'),
+    ).toHaveCount(3);
+    await expect(
+      githubBand.locator('[data-article-variant="compact"]'),
+    ).toHaveCount(2);
+    await expect(
+      hatenaBand.locator('[data-article-variant="media-two-column"]'),
+    ).toHaveCount(2);
+    await expect(
+      hatenaBand.locator('[data-article-variant="compact"]'),
+    ).toHaveCount(3);
   });
 });
 
@@ -202,16 +247,16 @@ test.describe("Responsive Layout — Wide (1440px+)", () => {
   test.use({ viewport: { width: 1920, height: 1080 } });
 
   test("content is constrained to max-width", async ({ page }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
+    // Act
     const main = page.locator("main");
     const mainBox = await main.boundingBox();
 
-    if (mainBox) {
-      // max-w-[1440px] constrains content width
-      expect(mainBox.width).toBeLessThanOrEqual(1440 + 64); // + padding
-    }
+    // Assert
+    expect(mainBox?.width).toBe(1240);
   });
 });
 

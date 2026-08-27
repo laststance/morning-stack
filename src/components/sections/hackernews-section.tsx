@@ -1,27 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import {
-  Star,
-  X,
-  MessageSquare,
-  ArrowBigUp,
-  EyeOff,
-  Ban,
-  Tag,
-} from "lucide-react";
-import { toast } from "sonner";
+import { ArrowBigUp, MessageSquare } from "lucide-react";
+
+import { ArticleActions } from "@/components/cards/article-actions";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
-import { SOURCE_LABELS } from "@/components/cards/article-card";
-import { ShareMenu } from "@/components/cards/share-menu";
 import type { PersistedArticle, HideAction } from "@/types/article";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -36,21 +20,6 @@ import {
 function formatScore(score: number): string {
   if (score >= 1000) return `${(score / 1000).toFixed(1)}k`;
   return String(score);
-}
-
-/**
- * Extract the first meaningful keyword from an article title.
- * @param title - The article title to extract from.
- * @returns A keyword string for topic-based hiding.
- * @example
- * extractKeyword("Show HN: A new database engine") // => "Show"
- */
-function extractKeyword(title: string): string {
-  const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find(
-    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
-  );
-  return capitalized ?? words[0] ?? title.slice(0, 20);
 }
 
 /**
@@ -104,29 +73,18 @@ function HNListItem({
   const meta = article.metadata;
   const comments = (meta.comments as number) ?? 0;
   const author = (meta.author as string) ?? "";
-  const sourceLabel = SOURCE_LABELS[article.source];
-  const keyword = extractKeyword(article.title);
   const domain = extractDomain(article.url);
-
-  const [shareExpanded, setShareExpanded] = useState(false);
-
-  const handleShareToggle = useCallback(() => {
-    setShareExpanded((prev) => !prev);
-  }, []);
-
-  const handleCopied = useCallback(() => {
-    toast.success("Copied!", { duration: 2000 });
-  }, []);
 
   return (
     <article
       className={cn(
         "group relative flex items-start gap-3 rounded-md px-3 pt-14 pb-2.5 lg:py-2.5",
         "border border-transparent bg-transparent",
-        "transition-all duration-150",
+        "transition-[border-color,background-color,box-shadow] duration-150 motion-reduce:transition-none",
         "hover:border-ms-border/50 hover:bg-ms-bg-secondary hover:shadow-sm",
         "focus-within:border-ms-border/50 focus-within:bg-ms-bg-secondary",
       )}
+      data-article-variant="ranked"
     >
       {/* Rank number */}
       <span
@@ -189,98 +147,14 @@ function HNListItem({
         </div>
       </div>
 
-      {/* Mobile reserves a top row for touch; desktop overlays compact actions on hover or focus. */}
-      <div
-        className={cn(
-          "absolute top-2 right-2 z-10 flex gap-0.5 opacity-100 transition-opacity",
-          "lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
-        )}
-      >
-        <button
-          type="button"
-          disabled={!onBookmark}
-          onClick={(e) => {
-            e.stopPropagation();
-            onBookmark?.(article);
-          }}
-          className={cn(
-            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-            "hover:bg-ms-accent/90 hover:text-white",
-            isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
-          )}
-          aria-label={
-            !onBookmark
-              ? "Bookmark status unavailable"
-              : isBookmarked
-                ? "Remove bookmark"
-                : "Bookmark"
-          }
-        >
-          <Star
-            className="size-3.5"
-            fill={isBookmarked ? "currentColor" : "none"}
-          />
-        </button>
-
-        <ShareMenu
-          article={article}
-          isExpanded={shareExpanded}
-          onToggle={handleShareToggle}
-          onCopied={handleCopied}
-          size="sm"
-        />
-
-        {/* Hide dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={!onHide}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-                "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
-              )}
-              aria-label={
-                onHide ? "Hide options" : "Hidden preferences unavailable"
-              }
-            >
-              <X className="size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-ms-bg-secondary border-ms-border w-56"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "article", targetId: article.id })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <EyeOff className="text-ms-text-muted size-4" />
-              Hide this article
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "source", targetId: article.source })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Ban className="text-ms-text-muted size-4" />
-              Hide from {sourceLabel}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Tag className="text-ms-text-muted size-4" />
-              Hide topic: {keyword}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <ArticleActions
+        article={article}
+        onBookmark={onBookmark}
+        onHide={onHide}
+        isBookmarked={isBookmarked}
+        size="compact"
+        className="absolute top-2 right-2 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+      />
     </article>
   );
 }
@@ -321,7 +195,7 @@ export function HackerNewsSection({
       className="flex min-w-0 flex-col gap-3"
       data-layout="editorial-band"
     >
-      <SectionHeader icon="🔶" title="Hacker News" />
+      <SectionHeader title="Hacker News" />
 
       {/* The lead story owns the first row; the remaining text-first stories use both desktop columns. */}
       <div className="grid grid-cols-1 gap-0.5 lg:grid-cols-2 lg:gap-x-6">

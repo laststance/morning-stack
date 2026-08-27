@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { isMobileViewport, openMobileMenu } from "./fixtures";
+import { isMobileViewport, openMobileMenu, waitForPageReady } from "./fixtures";
 
 const E2E_SESSION_TOKEN = "e2e-session-token";
 const E2E_BASE_URL = `http://localhost:${process.env.E2E_PORT ?? "3199"}`;
@@ -39,14 +39,13 @@ test("authenticated readers see signed-in Header controls without a client sessi
 
   // Act
   await page.goto("/?edition=morning");
+  await waitForPageReady(page);
   if (isMobileViewport(page)) {
     await openMobileMenu(page);
   }
 
   // Assert
-  await expect(
-    page.getByRole("button", { name: /Sign out/ }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign out/ })).toBeVisible();
   await expect(
     page
       .locator("article")

@@ -27,7 +27,11 @@ import {
 } from "@/lib/features/hidden-slice";
 import { addBookmark, removeBookmark } from "@/app/actions/bookmarks";
 import { hideItem } from "@/app/actions/hidden";
-import { HeroSection } from "@/components/sections/hero-section";
+import {
+  LeadStory,
+  selectFeaturedStories,
+  SupportingHeadlines,
+} from "@/components/sections/hero-section";
 import { WeatherWidget } from "@/components/widgets/weather-widget";
 import { StockWidget } from "@/components/widgets/stock-widget";
 import { TechSection } from "@/components/sections/tech-section";
@@ -332,89 +336,91 @@ export function HomeContent(props: HomeContentProps) {
     ? handleBookmark
     : undefined;
   const hideAction = isPersonalizationAvailable ? handleHide : undefined;
+  const featuredStories = useMemo(
+    () => selectFeaturedStories(filteredAllArticles),
+    [filteredAllArticles],
+  );
 
   return (
-    <div className="flex flex-col gap-8" data-layout="editorial-flow">
-      {/* ── Hero + Widgets row ──────────────────────────────────── */}
-      <div className="flex flex-col gap-5 lg:flex-row">
-        {/* Hero section — 3/4 width on desktop */}
-        <div className="min-w-0 lg:flex-[3]">
-          <HeroSection
-            articles={filteredAllArticles}
-            onBookmark={bookmarkAction}
-            onHide={hideAction}
-            bookmarkedIds={bookmarkedIdsSet}
-          />
-        </div>
+    <div className="flex flex-col gap-10" data-layout="editorial-flow">
+      <LeadStory
+        articles={
+          featuredStories.leadArticle ? [featuredStories.leadArticle] : []
+        }
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
 
-        {/* Widgets sidebar — secondary on mobile, right rail on desktop. */}
-        {props.mode === "current" && (
-          <aside
-            className="flex flex-col gap-3 lg:flex-[1]"
-            aria-label="Daily widgets"
-          >
-            <WeatherWidget data={props.weather} />
-            <StockWidget data={props.stocks} />
-          </aside>
-        )}
-      </div>
+      <GitHubSection
+        articles={getArticles(filteredArticlesBySource, "github")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
 
-      {/* Source bands stay independent so one tall or missing source cannot hold back the next section. */}
-      <div className="flex flex-col gap-8">
-        <TechSection
-          articles={getArticles(filteredArticlesBySource, "tech_rss")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-        <GitHubSection
-          articles={getArticles(filteredArticlesBySource, "github")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-        <HackerNewsSection
-          articles={getArticles(filteredArticlesBySource, "hackernews")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-        <RedditSection
-          articles={getArticles(filteredArticlesBySource, "reddit")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
+      {/* Current widgets stay in the same semantic position on every viewport. */}
+      {props.mode === "current" && (
+        <aside
+          className="grid grid-cols-1 gap-3 md:grid-cols-2"
+          aria-label="Daily widgets"
+        >
+          <WeatherWidget data={props.weather} />
+          <StockWidget data={props.stocks} />
+        </aside>
+      )}
 
-        <SnsSection
-          blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
-          youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
+      <SupportingHeadlines
+        articles={featuredStories.supportingArticles}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
 
-        <GitHubPRsSection
-          articles={getArticles(filteredArticlesBySource, "github_prs")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-
-        <HatenaSection
-          articles={getArticles(filteredArticlesBySource, "hatena")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-
-        <WorldNewsSection
-          articles={getArticles(filteredArticlesBySource, "world_news")}
-          onBookmark={bookmarkAction}
-          onHide={hideAction}
-          bookmarkedIds={bookmarkedIdsSet}
-        />
-      </div>
+      {/* Source bands remain independent so missing collectors collapse without blank columns. */}
+      <TechSection
+        articles={getArticles(filteredArticlesBySource, "tech_rss")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <HackerNewsSection
+        articles={getArticles(filteredArticlesBySource, "hackernews")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <RedditSection
+        articles={getArticles(filteredArticlesBySource, "reddit")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <SnsSection
+        blueskyArticles={getArticles(filteredArticlesBySource, "bluesky")}
+        youtubeArticles={getArticles(filteredArticlesBySource, "youtube")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <GitHubPRsSection
+        articles={getArticles(filteredArticlesBySource, "github_prs")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <HatenaSection
+        articles={getArticles(filteredArticlesBySource, "hatena")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
+      <WorldNewsSection
+        articles={getArticles(filteredArticlesBySource, "world_news")}
+        onBookmark={bookmarkAction}
+        onHide={hideAction}
+        bookmarkedIds={bookmarkedIdsSet}
+      />
     </div>
   );
 }

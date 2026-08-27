@@ -11,7 +11,6 @@ import {
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
-  EmptyTitle,
 } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import type { EditionType } from "@/lib/db/schema";
@@ -116,9 +115,9 @@ export function MissingEditionState({
         <EmptyMedia variant="icon">
           <CalendarX aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle>
+        <h1 className="text-lg font-medium tracking-tight">
           No {editionLabel} edition for {formatEditionDate(requestedDate)}
-        </EmptyTitle>
+        </h1>
         <EmptyDescription>
           MorningStack didn&apos;t publish this edition. Choose another date or
           return to today&apos;s briefing.
@@ -173,7 +172,9 @@ export function UnavailableEditionState() {
         <EmptyMedia variant="icon">
           <AlertCircle aria-hidden="true" />
         </EmptyMedia>
-        <EmptyTitle>This edition couldn&apos;t be loaded.</EmptyTitle>
+        <h1 className="text-lg font-medium tracking-tight">
+          This edition couldn&apos;t be loaded.
+        </h1>
         <EmptyDescription>Your selected date is unchanged.</EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center">

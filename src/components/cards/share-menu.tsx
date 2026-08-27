@@ -69,8 +69,8 @@ export function ShareMenu({
   const containerRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  const buttonSizeClassName =
-    size === "sm" ? "size-11 lg:size-7" : "size-11 lg:size-8";
+  // Visual icon scale varies, while every desktop hit target stays at least 40px.
+  const buttonSizeClassName = "size-11 lg:size-10";
   const iconSizeClassName = size === "sm" ? "size-3.5" : "size-4";
 
   // ── Click-outside handler ──

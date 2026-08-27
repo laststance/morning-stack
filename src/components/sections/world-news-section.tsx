@@ -29,7 +29,6 @@ export function WorldNewsSection({
 }: WorldNewsSectionProps) {
   return (
     <ContentSection
-      icon="🌍"
       title="World News"
       articles={articles}
       onBookmark={onBookmark}

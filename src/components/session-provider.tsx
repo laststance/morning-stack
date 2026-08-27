@@ -20,7 +20,8 @@ export function SessionProvider({
   session: Session | null;
 }) {
   return (
-    <NextAuthSessionProvider session={session}>
+    /* The server snapshot remains authoritative until an explicit sign-in/out action refreshes the route. */
+    <NextAuthSessionProvider session={session} refetchOnWindowFocus={false}>
       {children}
     </NextAuthSessionProvider>
   );

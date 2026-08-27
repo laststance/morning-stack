@@ -1,23 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useState } from "react";
-import { Star, X, EyeOff, Ban, Tag } from "lucide-react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import type { PersistedArticle, HideAction } from "@/types/article";
+import { useState } from "react";
+
+import { ArticleActions } from "@/components/cards/article-actions";
+import { ArticleCard } from "@/components/cards/article-card";
 import {
-  ArticleCard,
+  ARTICLE_IMAGE_SIZES,
   SOURCE_COLORS,
   SOURCE_LABELS,
-} from "@/components/cards/article-card";
-import { ShareMenu } from "@/components/cards/share-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/cards/constants";
+import { SectionHeader } from "@/components/sections/section-header";
+import { cn } from "@/lib/utils";
+import type { PersistedArticle, HideAction } from "@/types/article";
 
 /** Format a timestamp into a relative time label. */
 function formatRelativeTime(dateInput: string | number | Date): string {
@@ -47,19 +42,8 @@ function formatScore(score: number): string {
   return String(score);
 }
 
-/**
- * Extract the first meaningful keyword from an article title.
- */
-function extractKeyword(title: string): string {
-  const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find(
-    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
-  );
-  return capitalized ?? words[0] ?? title.slice(0, 20);
-}
-
-export interface HeroSectionProps {
-  /** All articles from the current edition. Sorted by score internally to pick top 4. */
+export interface FeaturedStoryProps {
+  /** Featured article or supporting articles selected once by HomeContent. */
   articles: PersistedArticle[];
   /** Called when the user clicks the bookmark button on any article. */
   onBookmark?: (article: PersistedArticle) => void;
@@ -70,50 +54,94 @@ export interface HeroSectionProps {
 }
 
 /**
- * Hero section displaying the top featured stories prominently.
- *
- * Shows 1 main featured article (large card) with 3 sub-articles
- * in a 3-column grid below. Articles are selected by highest score
- * across all sources.
+ * Selects the lead and three supporting stories whenever HomeContent recalculates its personalized article set.
+ * @returns The highest-scoring article and up to three supporting stories.
+ * @example
+ * selectFeaturedStories(articles) // => { leadArticle, supportingArticles }
  */
-export function HeroSection({
+export function selectFeaturedStories(articles: PersistedArticle[]): {
+  leadArticle: PersistedArticle | undefined;
+  supportingArticles: PersistedArticle[];
+} {
+  const sortedArticles = [...articles].sort(
+    (firstArticle, secondArticle) => secondArticle.score - firstArticle.score,
+  );
+  const leadArticle = sortedArticles[0];
+  // GitHub already owns the next prominent band, so its repositories must not repeat immediately as supporting headlines.
+  const supportingArticles = sortedArticles
+    .filter(
+      (article) =>
+        article.id !== leadArticle?.id && article.source !== "github",
+    )
+    .slice(0, 3);
+
+  return {
+    leadArticle,
+    supportingArticles,
+  };
+}
+
+/**
+ * Renders the single lead story whenever HomeContent has at least one visible article.
+ * @returns The page-defining lead article, or nothing when the edition has no visible articles.
+ * @example
+ * <LeadStory articles={[article]} />
+ */
+export function LeadStory({
   articles,
   onBookmark,
   onHide,
   bookmarkedIds = new Set(),
-}: HeroSectionProps) {
-  const sorted = [...articles].sort((a, b) => b.score - a.score);
-  const mainArticle = sorted[0];
-  const subArticles = sorted.slice(1, 4);
+}: FeaturedStoryProps) {
+  const leadArticle = articles[0];
 
-  if (!mainArticle) {
-    return null;
-  }
+  if (!leadArticle) return null;
 
   return (
-    <section aria-label="Featured stories">
-      {/* Main featured article */}
+    <section aria-label="Featured story" data-layout="lead-story">
       <HeroMainCard
-        article={mainArticle}
+        article={leadArticle}
         onBookmark={onBookmark}
         onHide={onHide}
-        isBookmarked={bookmarkedIds.has(mainArticle.id)}
+        isBookmarked={bookmarkedIds.has(leadArticle.id)}
       />
+    </section>
+  );
+}
 
-      {/* Sub-articles: 3-column grid below main card */}
-      {subArticles.length > 0 && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subArticles.map((article) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              onBookmark={onBookmark}
-              onHide={onHide}
-              isBookmarked={bookmarkedIds.has(article.id)}
-            />
-          ))}
-        </div>
-      )}
+/**
+ * Renders secondary top stories after GitHub and widgets so every viewport keeps the same reading order.
+ * @returns A three-story supporting band, or nothing when no supporting stories remain.
+ * @example
+ * <SupportingHeadlines articles={articles.slice(1, 4)} />
+ */
+export function SupportingHeadlines({
+  articles,
+  onBookmark,
+  onHide,
+  bookmarkedIds = new Set(),
+}: FeaturedStoryProps) {
+  if (articles.length === 0) return null;
+
+  return (
+    <section
+      aria-label="Supporting headlines"
+      className="flex min-w-0 flex-col gap-3"
+      data-layout="supporting-headlines"
+    >
+      <SectionHeader title="More top stories" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {articles.map((article) => (
+          <ArticleCard
+            key={article.id}
+            article={article}
+            presentation="compact"
+            onBookmark={onBookmark}
+            onHide={onHide}
+            isBookmarked={bookmarkedIds.has(article.id)}
+          />
+        ))}
+      </div>
     </section>
   );
 }
@@ -143,22 +171,12 @@ function HeroMainCard({
   isBookmarked = false,
 }: HeroMainCardProps) {
   const [imgError, setImgError] = useState(false);
-  const [shareExpanded, setShareExpanded] = useState(false);
-
-  const handleShareToggle = useCallback(() => {
-    setShareExpanded((prev) => !prev);
-  }, []);
-
-  const handleCopied = useCallback(() => {
-    toast.success("Copied!", { duration: 2000 });
-  }, []);
 
   const createdAt =
     (article.metadata.createdAt as string | undefined) ??
     (article.metadata.publishDate as string | undefined);
 
   const sourceLabel = SOURCE_LABELS[article.source];
-  const keyword = extractKeyword(article.title);
   const thumbnailUrl =
     article.thumbnailUrl && !imgError ? article.thumbnailUrl : null;
   const supportingText = getHeroSupportingText(article);
@@ -166,11 +184,12 @@ function HeroMainCard({
   return (
     <article
       className={cn(
-        "group glass-panel relative overflow-hidden rounded-md",
-        "transition-all duration-200",
-        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "group border-ms-border/70 bg-ms-bg-secondary relative overflow-hidden rounded-md border",
+        "transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
         "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
+      data-article-variant="lead"
     >
       {!thumbnailUrl && (
         <span
@@ -195,8 +214,8 @@ function HeroMainCard({
               src={thumbnailUrl}
               alt=""
               fill
-              sizes="(max-width: 1024px) 100vw, 75vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes={ARTICLE_IMAGE_SIZES.lead}
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               priority
               onError={() => setImgError(true)}
             />
@@ -253,7 +272,7 @@ function HeroMainCard({
           </div>
 
           {/* Title */}
-          <h2 className="text-ms-text-primary text-xl leading-tight font-bold sm:text-2xl">
+          <h1 className="text-ms-text-primary text-2xl leading-[1.1] font-semibold tracking-[-0.025em] text-balance sm:text-3xl lg:text-4xl">
             <a
               href={article.url}
               target="_blank"
@@ -263,12 +282,12 @@ function HeroMainCard({
             >
               {article.title}
             </a>
-          </h2>
+          </h1>
 
           {/* Supporting context fills the lead card without competing with its headline. */}
           {supportingText && (
             <p
-              className="text-ms-text-secondary line-clamp-3 max-w-[70ch] text-sm leading-relaxed"
+              className="text-ms-text-secondary line-clamp-3 max-w-[65ch] text-base leading-relaxed"
               data-article-summary
             >
               {supportingText}
@@ -277,98 +296,17 @@ function HeroMainCard({
         </div>
       </div>
 
-      {/* Touch layouts keep actions visible; desktop reveals the compact row on hover or focus. */}
-      <div
+      <ArticleActions
+        article={article}
+        onBookmark={onBookmark}
+        onHide={onHide}
+        isBookmarked={isBookmarked}
         className={cn(
-          "relative z-10 ml-auto flex w-fit gap-1 px-5 pb-5",
-          "opacity-100 transition-opacity lg:absolute lg:top-3 lg:right-3 lg:p-0 lg:opacity-0",
+          "ml-auto px-5 pb-5",
+          "lg:absolute lg:top-3 lg:right-3 lg:p-0 lg:opacity-0",
           "lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
         )}
-      >
-        <button
-          type="button"
-          disabled={!onBookmark}
-          onClick={(e) => {
-            e.stopPropagation();
-            onBookmark?.(article);
-          }}
-          className={cn(
-            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
-            "hover:bg-ms-accent/90 hover:text-white",
-            isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
-          )}
-          aria-label={
-            !onBookmark
-              ? "Bookmark status unavailable"
-              : isBookmarked
-                ? "Remove bookmark"
-                : "Bookmark article"
-          }
-        >
-          <Star
-            className="size-4"
-            fill={isBookmarked ? "currentColor" : "none"}
-          />
-        </button>
-
-        <ShareMenu
-          article={article}
-          isExpanded={shareExpanded}
-          onToggle={handleShareToggle}
-          onCopied={handleCopied}
-        />
-
-        {/* Hide dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={!onHide}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-8",
-                "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
-              )}
-              aria-label={
-                onHide ? "Hide options" : "Hidden preferences unavailable"
-              }
-            >
-              <X className="size-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-ms-bg-secondary border-ms-border w-56"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "article", targetId: article.id })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <EyeOff className="text-ms-text-muted size-4" />
-              Hide this article
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "source", targetId: article.source })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Ban className="text-ms-text-muted size-4" />
-              Hide from {sourceLabel}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Tag className="text-ms-text-muted size-4" />
-              Hide topic: {keyword}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      />
     </article>
   );
 }

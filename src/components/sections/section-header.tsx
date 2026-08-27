@@ -1,8 +1,6 @@
 import { cn } from "@/lib/utils";
 
 export interface SectionHeaderProps {
-  /** Emoji or icon displayed before the title. */
-  icon: string;
   /** Section title text. */
   title: string;
   /** Optional "View All" link URL. */
@@ -12,30 +10,31 @@ export interface SectionHeaderProps {
 }
 
 /**
- * Shared section header with icon, title, and optional "View All" link.
- *
- * Used by every content section (Tech, GitHub, HN, Reddit, etc.)
- * for consistent heading treatment across the home page.
+ * Renders the restrained section rule whenever an editorial source band begins.
+ * @returns A consistent h2 and optional view-all affordance without decorative emoji noise.
+ * @example
+ * <SectionHeader title="Tech News" />
  */
 export function SectionHeader({
-  icon,
   title,
   viewAllHref,
   className,
 }: SectionHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between border-b border-ms-border pb-2 mb-1", className)}>
-      <h2 className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-ms-text-primary">
-        <span role="img" aria-hidden="true">
-          {icon}
-        </span>
+    <div
+      className={cn(
+        "border-ms-border mb-1 flex items-center justify-between border-b pb-2",
+        className,
+      )}
+    >
+      <h2 className="text-ms-text-primary text-xs font-semibold tracking-[0.14em] uppercase">
         {title}
       </h2>
 
       {viewAllHref && (
         <a
           href={viewAllHref}
-          className="text-xs font-medium text-ms-accent transition-colors hover:text-ms-accent/80"
+          className="text-ms-accent hover:text-ms-accent/80 text-xs font-medium transition-colors"
         >
           View All
         </a>

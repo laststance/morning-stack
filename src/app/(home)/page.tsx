@@ -14,7 +14,6 @@ import { Header } from "@/components/layout/header";
 import { TickerWrapper } from "@/components/layout/ticker-wrapper";
 import { SessionProvider } from "@/components/session-provider";
 import { auth } from "@/lib/auth";
-import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
 import { getDefaultEditionType } from "@/lib/edition-date/get-default-edition-type";
 import { getTodayJst } from "@/lib/edition-date/get-today-jst";
 import { getArchiveBoundaryRedirectHref } from "@/lib/edition-navigation/get-archive-boundary-redirect-href";
@@ -126,21 +125,20 @@ export default async function HomePage({
           requestedEditionType={selection.requestedEditionType}
           today={today}
           earliestPublishedDate={earliestPublishedDate}
+          fallbackEdition={
+            content.status === "found" && content.isLatestFallback
+              ? { date: content.edition.date, type: content.edition.type }
+              : null
+          }
         />
 
-        <main className="relative mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <main className="relative mx-auto flex max-w-[1240px] flex-col gap-4 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
           <HomeWarnings
             isBoundsUnavailable={bounds.status === "unavailable"}
             isPersonalizationUnavailable={
               personalization.status === "unavailable"
             }
           />
-          {content.status === "found" && content.isLatestFallback && (
-            <p className="text-ms-text-secondary text-sm" role="status">
-              Latest available: {formatEditionDate(content.edition.date)}{" "}
-              {content.edition.type === "morning" ? "Morning" : "Evening"}
-            </p>
-          )}
           {renderEditionResult(
             content,
             personalization,

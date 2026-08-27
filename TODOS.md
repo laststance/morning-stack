@@ -14,25 +14,25 @@
 **Priority:** P2
 **Depends on:** None
 
-### Define the editorial type hierarchy and Home h1
+### Evaluate an alternate editorial typeface
 
-**What:** Decide whether Inter remains the editorial face, then add a meaningful Home `h1` and document the resulting headline scale.
+**What:** Compare Inter with a small set of editorial display faces before changing the established body typography.
 
-**Why:** The current interface is consistent but visually generic, and the Home heading outline begins at `h2` even though the rendered hierarchy looks correct.
+**Why:** The Home lead now owns the single `h1` and its supporting hierarchy is explicit, but Inter can still make the publication feel visually generic.
 
-**Context:** This requires a product-wide identity and semantic-heading decision rather than a diff-scoped historical-navigation change. Preserve the current Inter, Noto Sans JP, and JetBrains Mono roles until the replacement is approved.
+**Context:** Preserve the current Inter, Noto Sans JP, and JetBrains Mono roles until a bilingual comparison proves that a replacement improves identity without weakening dense reading.
 
 **Effort:** M
 **Priority:** P3
 **Depends on:** None
 
-### Replace broad transition-all usage
+### Replace remaining broad transition-all usage
 
 **What:** Audit shared cards and sections, then replace `transition-all` with the exact color, transform, border, opacity, or shadow properties that animate.
 
 **Why:** Broad transitions make motion harder to reason about and can animate unrelated layout changes.
 
-**Context:** The design audit found this pattern across the existing component system, not only in historical-edition code. Validate hover, focus, and reduced-motion behavior during the cleanup.
+**Context:** Editorial cards now animate explicit properties and disable decorative motion for reduced-motion readers. Finish the same audit in shared UI primitives such as Button and Tabs, then validate hover and focus behavior.
 
 **Effort:** S
 **Priority:** P3

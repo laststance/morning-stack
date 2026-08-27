@@ -1,30 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useState } from "react";
-import {
-  Star,
-  X,
-  Play,
-  Heart,
-  Repeat2,
-  Eye,
-  EyeOff,
-  Ban,
-  Tag,
-} from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Eye, Heart, Play, Repeat2 } from "lucide-react";
+
+import { ArticleActions } from "@/components/cards/article-actions";
+import { ARTICLE_IMAGE_SIZES } from "@/components/cards/constants";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
 import type { PersistedArticle, HideAction } from "@/types/article";
-import { SOURCE_LABELS } from "@/components/cards/article-card";
-import { ShareMenu } from "@/components/cards/share-menu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -48,22 +32,11 @@ const YOUTUBE_COLOR = "bg-red-600";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-/** Format a view/like count into a compact label (e.g., 1.2M, 34K). */
+/** Formats source engagement whenever a social card displays compact counts. */
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return String(n);
-}
-
-/**
- * Extract the first meaningful keyword from an article title.
- */
-function extractKeyword(title: string): string {
-  const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find(
-    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
-  );
-  return capitalized ?? words[0] ?? title.slice(0, 20);
 }
 
 // ─── YouTube Card ───────────────────────────────────────────────────
@@ -95,10 +68,11 @@ function YouTubeCard({
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-md",
         "border-ms-border/50 bg-ms-bg-secondary border",
-        "transition-all duration-200",
-        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
         "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
+      data-article-variant="video-rail"
     >
       {/* Thumbnail with play overlay */}
       <a
@@ -113,8 +87,8 @@ function YouTubeCard({
             src={article.thumbnailUrl}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes={ARTICLE_IMAGE_SIZES["video-rail"]}
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -129,7 +103,7 @@ function YouTubeCard({
             className={cn(
               "flex size-12 items-center justify-center rounded-full",
               "bg-red-600/80 text-white shadow-lg backdrop-blur-sm",
-              "transition-transform group-hover:scale-110",
+              "transition-transform group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100",
             )}
           >
             <Play className="size-5 fill-current" />
@@ -190,11 +164,13 @@ function YouTubeCard({
       </div>
 
       {/* Shared action row remains reachable by touch and collapses to hover treatment on desktop. */}
-      <ActionButtons
+      <ArticleActions
         article={article}
         isBookmarked={isBookmarked}
         onBookmark={onBookmark}
         onHide={onHide}
+        size="compact"
+        className="mr-1 mb-3 ml-auto lg:absolute lg:top-2 lg:right-2 lg:m-0 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
       />
     </article>
   );
@@ -229,10 +205,11 @@ function BlueskyCard({
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-md",
         "border-ms-border/50 bg-ms-bg-secondary border",
-        "transition-all duration-200",
-        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
+        "transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none",
+        "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
         "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
+      data-article-variant="social-post"
     >
       {/* Source brand bar (top) */}
       <span
@@ -298,140 +275,15 @@ function BlueskyCard({
       </div>
 
       {/* Shared action row remains reachable by touch and collapses to hover treatment on desktop. */}
-      <ActionButtons
+      <ArticleActions
         article={article}
         isBookmarked={isBookmarked}
         onBookmark={onBookmark}
         onHide={onHide}
+        size="compact"
+        className="mr-1 mb-3 ml-auto lg:absolute lg:top-2 lg:right-2 lg:m-0 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
       />
     </article>
-  );
-}
-
-// ─── Shared action buttons ──────────────────────────────────────────
-
-interface ActionButtonsProps {
-  article: PersistedArticle;
-  isBookmarked: boolean;
-  onBookmark?: (article: PersistedArticle) => void;
-  onHide?: (action: HideAction) => void;
-}
-
-/**
- * Renders touch-visible bookmark/share/hide controls that become compact desktop hover actions for SNS cards.
- * @param props - Article, bookmark state, and optional personalization callbacks.
- * @returns A responsive action row shared by Bluesky and YouTube cards.
- * @example
- * <ActionButtons article={article} isBookmarked={false} />
- */
-function ActionButtons({
-  article,
-  isBookmarked,
-  onBookmark,
-  onHide,
-}: ActionButtonsProps) {
-  const sourceLabel = SOURCE_LABELS[article.source];
-  const keyword = extractKeyword(article.title);
-  const [shareExpanded, setShareExpanded] = useState(false);
-
-  const handleShareToggle = useCallback(() => {
-    setShareExpanded((prev) => !prev);
-  }, []);
-
-  const handleCopied = useCallback(() => {
-    toast.success("Copied!", { duration: 2000 });
-  }, []);
-
-  return (
-    <div
-      className={cn(
-        "relative z-10 mr-1 mb-3 ml-auto flex w-fit gap-0.5 opacity-100 transition-opacity",
-        "lg:absolute lg:top-2 lg:right-2 lg:m-0 lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
-      )}
-    >
-      <button
-        type="button"
-        disabled={!onBookmark}
-        onClick={(e) => {
-          e.stopPropagation();
-          onBookmark?.(article);
-        }}
-        className={cn(
-          "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-          "hover:bg-ms-accent/90 hover:text-white",
-          isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
-        )}
-        aria-label={
-          !onBookmark
-            ? "Bookmark status unavailable"
-            : isBookmarked
-              ? "Remove bookmark"
-              : "Bookmark"
-        }
-      >
-        <Star
-          className="size-3.5"
-          fill={isBookmarked ? "currentColor" : "none"}
-        />
-      </button>
-
-      <ShareMenu
-        article={article}
-        isExpanded={shareExpanded}
-        onToggle={handleShareToggle}
-        onCopied={handleCopied}
-        size="sm"
-      />
-
-      {/* Hide dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={!onHide}
-            onClick={(e) => e.stopPropagation()}
-            className={cn(
-              "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-              "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
-            )}
-            aria-label={
-              onHide ? "Hide options" : "Hidden preferences unavailable"
-            }
-          >
-            <X className="size-3.5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="bg-ms-bg-secondary border-ms-border w-56"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DropdownMenuItem
-            onClick={() => onHide?.({ type: "article", targetId: article.id })}
-            className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-          >
-            <EyeOff className="text-ms-text-muted size-4" />
-            Hide this article
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              onHide?.({ type: "source", targetId: article.source })
-            }
-            className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-          >
-            <Ban className="text-ms-text-muted size-4" />
-            Hide from {sourceLabel}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => onHide?.({ type: "topic", targetId: keyword })}
-            className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-          >
-            <Tag className="text-ms-text-muted size-4" />
-            Hide topic: {keyword}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
   );
 }
 
@@ -466,13 +318,10 @@ export function SnsSection({
         {/* Bluesky sub-section */}
         {hasBluesky && (
           <div className="flex min-w-0 flex-col gap-4">
-            <SectionHeader icon="🦋" title="Bluesky" />
-            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3">
+            <SectionHeader title="Bluesky" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {blueskyArticles.slice(0, 3).map((article) => (
-                <div
-                  key={article.id}
-                  className="w-[calc(100vw-2rem)] shrink-0 sm:w-auto"
-                >
+                <div key={article.id}>
                   <BlueskyCard
                     article={article}
                     onBookmark={onBookmark}
@@ -488,12 +337,15 @@ export function SnsSection({
         {/* YouTube sub-section */}
         {hasYoutube && (
           <div className="flex min-w-0 flex-col gap-4">
-            <SectionHeader icon="🎬" title="YouTube" />
-            <div className="scrollbar-none flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3">
+            <SectionHeader title="YouTube" />
+            <div
+              className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 lg:grid-cols-3"
+              data-layout="video-rail"
+            >
               {youtubeArticles.slice(0, 3).map((article) => (
                 <div
                   key={article.id}
-                  className="w-[calc(100vw-2rem)] shrink-0 sm:w-auto"
+                  className="w-[86vw] max-w-md shrink-0 snap-start scroll-ml-4 sm:w-auto sm:max-w-none"
                 >
                   <YouTubeCard
                     article={article}

@@ -10,101 +10,129 @@ test.describe("Article Card Interactions", () => {
   test("article cards link to external URLs with target _blank", async ({
     page,
   }) => {
-    // Find any article card link on the page
-    const articleLinks = page.locator('article a[target="_blank"]');
-    const count = await articleLinks.count();
+    // Arrange
+    const firstLink = page.locator('article a[target="_blank"]').first();
 
-    if (count > 0) {
-      // Verify external links have correct attributes
-      const firstLink = articleLinks.first();
-      await expect(firstLink).toHaveAttribute("target", "_blank");
-      await expect(firstLink).toHaveAttribute("rel", /noopener/);
+    // Act
+    const href = await firstLink.getAttribute("href");
 
-      // Verify the href is a valid URL
-      const href = await firstLink.getAttribute("href");
-      expect(href).toBeTruthy();
-      expect(href).toMatch(/^https?:\/\//);
-    } else {
-      // No edition data — check fallback is showing
-      await expect(page.getByText("No edition available")).toBeVisible();
-    }
+    // Assert
+    await expect(firstLink).toHaveAttribute("target", "_blank");
+    await expect(firstLink).toHaveAttribute("rel", /noopener/);
+    expect(href).toBe("https://example.com/current-shared");
   });
 
   test("article card shows source badge", async ({ page }) => {
-    // Article cards should have source badges with known source names
-    const knownSources = [
-      "Hacker News",
-      "GitHub",
-      "Reddit",
-      "Tech News",
-      "Hatena",
-      "Bluesky",
-      "YouTube",
-      "World News",
-      "Product Hunt",
-    ];
+    // Arrange / Act
+    const leadStory = page.getByRole("region", { name: "Featured story" });
 
-    const articles = page.locator("article");
-    const count = await articles.count();
-
-    if (count > 0) {
-      // At least one article card should have a recognizable source badge
-      let foundSource = false;
-      for (const source of knownSources) {
-        const badge = page.locator("article").getByText(source, { exact: true }).first();
-        if (await badge.isVisible().catch(() => false)) {
-          foundSource = true;
-          break;
-        }
-      }
-      expect(foundSource).toBeTruthy();
-    }
+    // Assert
+    await expect(
+      leadStory.getByText("Hacker News", { exact: true }),
+    ).toBeVisible();
   });
 
-  test("bookmark button is visible on article card hover", async ({
-    page,
-  }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+  test("bookmark button is visible on article card hover", async ({ page }) => {
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      // Hover over the card to reveal action buttons
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for bookmark button (Star icon with aria-label)
-      const bookmarkBtn = firstArticle.getByLabel(/bookmark/i).first();
-      await expect(bookmarkBtn).toBeVisible({ timeout: 3000 });
-    }
+    // Assert
+    await expect(firstArticle.getByLabel(/bookmark/i).first()).toBeVisible();
   });
 
   test("share button is visible on article card hover", async ({ page }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for share button
-      const shareBtn = firstArticle.getByLabel(/share/i).first();
-      await expect(shareBtn).toBeVisible({ timeout: 3000 });
-    }
+    // Assert
+    await expect(firstArticle.getByLabel(/share/i).first()).toBeVisible();
   });
 
   test("hide options button is visible on article card hover", async ({
     page,
   }) => {
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.hover();
 
-      // Look for hide button
-      const hideBtn = firstArticle.getByLabel(/hide/i).first();
-      await expect(hideBtn).toBeVisible({ timeout: 3000 });
+    // Assert
+    await expect(firstArticle.getByLabel(/hide/i).first()).toBeVisible();
+  });
+
+  test("lead and section headings form one text-only editorial outline", async ({
+    page,
+  }) => {
+    // Arrange / Act
+    const pageHeadings = page.locator("main h1");
+    const sectionHeadings = page.locator("main h2");
+
+    // Assert
+    await expect(pageHeadings).toHaveCount(1);
+    await expect(pageHeadings).toHaveText("Current shared story");
+    await expect(
+      sectionHeadings.filter({ hasText: /🐙|🔶|📌|🎬/u }),
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("Article Action Consistency", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("five editorial card variants expose the same touch-safe actions", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+    await waitForPageReady(page);
+    const variants = [
+      "lead",
+      "media-three-column",
+      "compact",
+      "ranked",
+      "video-rail",
+    ];
+
+    // Act
+    const actionSizes = [];
+    for (const variant of variants) {
+      const article = page
+        .locator(`[data-article-variant="${variant}"]`)
+        .first();
+      const actions = article.locator("[data-article-actions] button");
+      actionSizes.push({
+        variant,
+        count: await actions.count(),
+        boxes: await Promise.all([
+          actions.nth(0).boundingBox(),
+          actions.nth(1).boundingBox(),
+          actions.nth(2).boundingBox(),
+        ]),
+      });
+    }
+
+    // Assert
+    expect(
+      actionSizes.map(({ variant, count }) => ({ variant, count })),
+    ).toEqual([
+      { variant: "lead", count: 3 },
+      { variant: "media-three-column", count: 3 },
+      { variant: "compact", count: 3 },
+      { variant: "ranked", count: 3 },
+      { variant: "video-rail", count: 3 },
+    ]);
+    for (const { boxes } of actionSizes) {
+      for (const box of boxes) {
+        expect(box?.width).toBeGreaterThanOrEqual(44);
+        expect(box?.height).toBeGreaterThanOrEqual(44);
+      }
     }
   });
 });
@@ -116,26 +144,18 @@ test.describe("Bookmark Feature", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    await firstArticle.hover();
+    const bookmarkButton = firstArticle.getByLabel(/bookmark/i).first();
+    const navigationPromise = page.waitForURL(/\/login/, { timeout: 5000 });
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await bookmarkButton.click();
+    await navigationPromise;
 
-      const bookmarkBtn = firstArticle.getByLabel(/bookmark/i).first();
-
-      // Set up navigation listener before clicking
-      const navigationPromise = page.waitForURL(/\/login/, {
-        timeout: 5000,
-      });
-
-      await bookmarkBtn.click();
-
-      // Should redirect to login page
-      await navigationPromise;
-      expect(page.url()).toContain("/login");
-    }
+    // Assert
+    expect(page.url()).toContain("/login");
   });
 });
 
@@ -144,27 +164,16 @@ test.describe("Hide Feature", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    const articles = page.locator("article");
-    const count = await articles.count();
+    // Arrange
+    const firstArticle = page.locator("article").first();
+    await firstArticle.hover();
 
-    if (count > 0) {
-      const firstArticle = articles.first();
-      await firstArticle.hover();
+    // Act
+    await firstArticle.getByLabel("Hide options").first().click();
 
-      // Click the hide button to open dropdown
-      const hideBtn = firstArticle.getByLabel("Hide options").first();
-      await hideBtn.click();
-
-      // Dropdown should show three hide options
-      await expect(page.getByText("Hide this article")).toBeVisible({
-        timeout: 3000,
-      });
-      await expect(page.getByText(/Hide from /)).toBeVisible({
-        timeout: 3000,
-      });
-      await expect(page.getByText(/Hide topic:/)).toBeVisible({
-        timeout: 3000,
-      });
-    }
+    // Assert
+    await expect(page.getByText("Hide this article")).toBeVisible();
+    await expect(page.getByText(/Hide from /)).toBeVisible();
+    await expect(page.getByText(/Hide topic:/)).toBeVisible();
   });
 });

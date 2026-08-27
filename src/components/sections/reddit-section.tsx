@@ -26,7 +26,6 @@ export function RedditSection({
 }: RedditSectionProps) {
   return (
     <ContentSection
-      icon="🤖"
       title="Reddit"
       articles={articles}
       onBookmark={onBookmark}

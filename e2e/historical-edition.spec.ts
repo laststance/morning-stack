@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForPageReady } from "./fixtures";
+
 const TODAY = "2030-01-15";
 const YESTERDAY = "2030-01-14";
 const EARLIEST_ARCHIVE_DATE = "2030-01-12";
@@ -11,10 +13,11 @@ test.describe("Historical edition navigation", () => {
   }) => {
     // Arrange
     await page.goto("/?edition=morning");
+    await waitForPageReady(page);
 
     // Assert current
     await expect(page.getByText("Current shared story").first()).toBeVisible();
-    await expect(page.getByLabel("Stock ticker")).toBeVisible();
+    await expect(page.getByLabel("Stock ticker").first()).toBeVisible();
     await expect(page.getByText("Weather", { exact: true })).toBeVisible();
     await expect(page.getByText("Markets", { exact: true })).toBeVisible();
 
@@ -51,7 +54,11 @@ test.describe("Historical edition navigation", () => {
     // Assert
     await expect(page).toHaveURL(`/?date=${YESTERDAY}&edition=evening`);
     await expect(
-      page.getByText(`No Evening edition for Jan 14, 2030`),
+      page.getByRole("heading", {
+        level: 1,
+        name: "No Evening edition for Jan 14, 2030",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(page.getByLabel("Stock ticker")).toHaveCount(0);
   });
@@ -111,7 +118,11 @@ test.describe("Historical edition navigation", () => {
       `/?date=${EARLIEST_ARCHIVE_DATE}&edition=evening`,
     );
     await expect(
-      page.getByText("No Evening edition for Jan 12, 2030"),
+      page.getByRole("heading", {
+        level: 1,
+        name: "No Evening edition for Jan 12, 2030",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /^Previous day,/ }),

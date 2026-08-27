@@ -1,19 +1,11 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
-import { Star, X, EyeOff, Ban, Tag } from "lucide-react";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
+
+import { ArticleActions } from "@/components/cards/article-actions";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/sections/section-header";
-import { SOURCE_LABELS } from "@/components/cards/article-card";
-import { ShareMenu } from "@/components/cards/share-menu";
 import type { PersistedArticle, HideAction } from "@/types/article";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -32,22 +24,11 @@ export interface GitHubPRsSectionProps {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-/** Repo display config with color-coded dot. */
+/** Maps supported repositories to their compact identity dot whenever a PR card renders. */
 const REPO_COLORS: Record<string, string> = {
   react: "bg-cyan-400",
   "next.js": "bg-white",
 };
-
-/**
- * Extract the first meaningful keyword from an article title.
- */
-function extractKeyword(title: string): string {
-  const words = title.split(/\s+/).filter((w) => w.length >= 3);
-  const capitalized = words.find(
-    (w) => /^[A-Z]/.test(w) && !/^(The|And|For|How|Why|What|New|Top)$/i.test(w),
-  );
-  return capitalized ?? words[0] ?? title.slice(0, 20);
-}
 
 // ─── PR Card ────────────────────────────────────────────────────────
 
@@ -81,27 +62,16 @@ function PRCard({
   const deletions = (meta.deletions as number) ?? 0;
   const draft = meta.draft as boolean;
 
-  const sourceLabel = SOURCE_LABELS[article.source];
-  const keyword = extractKeyword(article.title);
-  const [shareExpanded, setShareExpanded] = useState(false);
-
-  const handleShareToggle = useCallback(() => {
-    setShareExpanded((prev) => !prev);
-  }, []);
-
-  const handleCopied = useCallback(() => {
-    toast.success("Copied!", { duration: 2000 });
-  }, []);
-
   return (
     <article
       className={cn(
         "group relative flex flex-col gap-2 rounded-md p-3",
         "glass-panel",
-        "transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-lg",
+        "transition-[box-shadow,transform] duration-200 motion-reduce:transition-none",
+        "hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0",
         "focus-within:ring-ms-accent/50 focus-within:ring-2",
       )}
+      data-article-variant="pull-request"
     >
       {/* Top row: repo badge + PR number + state badge */}
       <div className="flex items-center gap-2">
@@ -197,97 +167,15 @@ function PRCard({
         )}
       </div>
 
-      {/* Touch devices keep actions in flow; desktop reveals the compact row on hover or focus. */}
-      <div
-        className={cn(
-          "relative z-10 ml-auto flex w-fit gap-0.5 opacity-100 transition-opacity",
-          "lg:absolute lg:top-2 lg:right-2 lg:gap-1 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100",
-        )}
-      >
-        <button
-          type="button"
-          disabled={!onBookmark}
-          onClick={(e) => {
-            e.stopPropagation();
-            onBookmark?.(article);
-          }}
-          className={cn(
-            "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-            "hover:bg-ms-accent/90 hover:text-white",
-            isBookmarked ? "text-ms-accent" : "text-ms-text-secondary",
-          )}
-          aria-label={
-            !onBookmark
-              ? "Bookmark status unavailable"
-              : isBookmarked
-                ? "Remove bookmark"
-                : "Bookmark"
-          }
-        >
-          <Star
-            className="size-3.5"
-            fill={isBookmarked ? "currentColor" : "none"}
-          />
-        </button>
-
-        <ShareMenu
-          article={article}
-          isExpanded={shareExpanded}
-          onToggle={handleShareToggle}
-          onCopied={handleCopied}
-          size="sm"
-        />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              disabled={!onHide}
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "glass-subtle flex size-11 items-center justify-center rounded-md transition-colors lg:size-7",
-                "text-ms-text-secondary hover:bg-ms-accent/90 hover:text-white",
-              )}
-              aria-label={
-                onHide ? "Hide options" : "Hidden preferences unavailable"
-              }
-            >
-              <X className="size-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-ms-bg-secondary border-ms-border w-56"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "article", targetId: article.id })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <EyeOff className="text-ms-text-muted size-4" />
-              Hide this PR
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                onHide?.({ type: "source", targetId: article.source })
-              }
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Ban className="text-ms-text-muted size-4" />
-              Hide from {sourceLabel}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onHide?.({ type: "topic", targetId: keyword })}
-              className="text-ms-text-primary focus:bg-ms-bg-tertiary focus:text-ms-text-primary"
-            >
-              <Tag className="text-ms-text-muted size-4" />
-              Hide topic: {keyword}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <ArticleActions
+        article={article}
+        onBookmark={onBookmark}
+        onHide={onHide}
+        isBookmarked={isBookmarked}
+        itemLabel="PR"
+        size="compact"
+        className="ml-auto lg:absolute lg:top-2 lg:right-2 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+      />
     </article>
   );
 }
@@ -323,7 +211,7 @@ export function GitHubPRsSection({
       className="flex min-w-0 flex-col gap-3"
       data-layout="editorial-band"
     >
-      <SectionHeader icon="🔀" title="Pull Requests" />
+      <SectionHeader title="Pull Requests" />
 
       {/* Tab switcher */}
       <div className="border-ms-border flex gap-4 border-b" role="tablist">

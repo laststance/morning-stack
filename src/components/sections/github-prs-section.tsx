@@ -295,11 +295,11 @@ function PRCard({
 // ─── Main section ───────────────────────────────────────────────────
 
 /**
- * GitHub Pull Requests section with Open/Merged tab switching.
- *
- * Displays recent PRs from facebook/react and vercel/next.js.
- * Each PR card shows repo badge, PR number, title, author,
- * labels, diff stats, and state badge. Bloomberg data-dense style.
+ * Renders filtered pull requests as a compact two-column desktop queue whenever its tab changes.
+ * @param props - Persisted PRs and optional personalization callbacks.
+ * @returns A tabbed PR band with one mobile column and balanced desktop pairs.
+ * @example
+ * <GitHubPRsSection articles={articles} />
  */
 export function GitHubPRsSection({
   articles,
@@ -313,11 +313,16 @@ export function GitHubPRsSection({
     () => articles.filter((a) => a.metadata.state === activeTab),
     [articles, activeTab],
   );
+  const hasOddArticleCount = filteredArticles.length % 2 === 1;
 
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label="Pull Requests" className="flex min-w-0 flex-col gap-3">
+    <section
+      aria-label="Pull Requests"
+      className="flex min-w-0 flex-col gap-3"
+      data-layout="editorial-band"
+    >
       <SectionHeader icon="🔀" title="Pull Requests" />
 
       {/* Tab switcher */}
@@ -341,17 +346,25 @@ export function GitHubPRsSection({
         ))}
       </div>
 
-      {/* PR list */}
-      <div className="flex flex-col gap-2">
+      {/* PR cards retain their queue density while using the otherwise empty second desktop column. */}
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         {filteredArticles.length > 0 ? (
-          filteredArticles.map((article) => (
-            <PRCard
+          filteredArticles.map((article, articleIndex) => (
+            <div
               key={article.id}
-              article={article}
-              onBookmark={onBookmark}
-              onHide={onHide}
-              isBookmarked={bookmarkedIds.has(article.id)}
-            />
+              className={cn(
+                hasOddArticleCount &&
+                  articleIndex === filteredArticles.length - 1 &&
+                  "lg:col-span-2",
+              )}
+            >
+              <PRCard
+                article={article}
+                onBookmark={onBookmark}
+                onHide={onHide}
+                isBookmarked={bookmarkedIds.has(article.id)}
+              />
+            </div>
           ))
         ) : (
           <p className="text-ms-text-muted py-4 text-center text-xs">

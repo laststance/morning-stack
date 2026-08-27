@@ -301,11 +301,11 @@ export interface HackerNewsSectionProps {
 // ─── Main section ────────────────────────────────────────────────────
 
 /**
- * Hacker News section displaying top front-page stories as a ranked list.
- *
- * Uses a compact list view instead of image cards since HN content is
- * text-only. Each item shows rank number, title, domain hint, points,
- * comment count, and author — matching the Bloomberg data-dense aesthetic.
+ * Renders Hacker News as a lead story plus a ranked two-column desktop list whenever the source band appears.
+ * @param props - Persisted HN stories and optional personalization callbacks.
+ * @returns A compact ranked band that stays one column on touch layouts.
+ * @example
+ * <HackerNewsSection articles={articles} />
  */
 export function HackerNewsSection({
   articles,
@@ -316,20 +316,25 @@ export function HackerNewsSection({
   if (articles.length === 0) return null;
 
   return (
-    <section aria-label="Hacker News" className="flex min-w-0 flex-col gap-3">
+    <section
+      aria-label="Hacker News"
+      className="flex min-w-0 flex-col gap-3"
+      data-layout="editorial-band"
+    >
       <SectionHeader icon="🔶" title="Hacker News" />
 
-      {/* Ranked list — no horizontal scroll needed for compact items */}
-      <div className="flex flex-col gap-0.5">
+      {/* The lead story owns the first row; the remaining text-first stories use both desktop columns. */}
+      <div className="grid grid-cols-1 gap-0.5 lg:grid-cols-2 lg:gap-x-6">
         {articles.slice(0, 5).map((article, index) => (
-          <HNListItem
-            key={article.id}
-            article={article}
-            rank={index + 1}
-            onBookmark={onBookmark}
-            onHide={onHide}
-            isBookmarked={bookmarkedIds.has(article.id)}
-          />
+          <div key={article.id} className={cn(index === 0 && "lg:col-span-2")}>
+            <HNListItem
+              article={article}
+              rank={index + 1}
+              onBookmark={onBookmark}
+              onHide={onHide}
+              isBookmarked={bookmarkedIds.has(article.id)}
+            />
+          </div>
         ))}
       </div>
     </section>

@@ -4,7 +4,7 @@ const e2eDatabaseUrl =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@127.0.0.1:54329/morning_stack_e2e";
 const E2E_TODAY_JST = "2030-01-15";
-const e2ePort = Number(process.env.E2E_PORT ?? "3198");
+const e2ePort = Number(process.env.E2E_PORT ?? "3199");
 
 /**
  * Playwright E2E test configuration for MorningStack.

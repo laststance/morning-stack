@@ -15,7 +15,11 @@ export interface GitHubSectionProps {
 }
 
 /**
- * GitHub Trending section displaying popular repositories from the last 7 days.
+ * Renders recent GitHub repositories with descriptions on cards promoted by ContentSection's editorial grid.
+ * @param props - Persisted repositories and optional personalization callbacks.
+ * @returns A GitHub Trending source band with promoted repository context.
+ * @example
+ * <GitHubSection articles={articles} />
  */
 export function GitHubSection({
   articles,
@@ -31,6 +35,7 @@ export function GitHubSection({
       onBookmark={onBookmark}
       onHide={onHide}
       bookmarkedIds={bookmarkedIds}
+      showFeaturedExcerpts
     />
   );
 }

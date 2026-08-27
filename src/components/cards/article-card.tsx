@@ -98,10 +98,15 @@ export interface ArticleCardProps {
   onHide?: (action: HideAction) => void;
   /** Whether this article is currently bookmarked. */
   isBookmarked?: boolean;
+  /** Uses a horizontal desktop composition when one article owns the full source band. */
+  layout?: "vertical" | "wide";
+  /** Shows the stored article description when the parent promotes this card. */
+  showExcerpt?: boolean;
 }
 
 /**
  * Renders a source-agnostic article card whose actions stay visible on touch layouts and compact on desktop hover.
+ * @param props - Article content, personalization actions, bookmark state, and optional wide or excerpt presentation.
  * @returns An article card with bookmark, share, and hide controls.
  * @example
  * <ArticleCard article={article} onBookmark={handleBookmark} />
@@ -111,6 +116,8 @@ export function ArticleCard({
   onBookmark,
   onHide,
   isBookmarked = false,
+  layout = "vertical",
+  showExcerpt = false,
 }: ArticleCardProps) {
   const [imgError, setImgError] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
@@ -131,15 +138,18 @@ export function ArticleCard({
   const keyword = extractKeyword(article.title);
   const thumbnailUrl =
     article.thumbnailUrl && !imgError ? article.thumbnailUrl : null;
+  const usesWideLayout = layout === "wide" && Boolean(thumbnailUrl);
+  const excerpt = showExcerpt ? article.excerpt?.trim() : undefined;
 
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-md",
         "border-ms-border/50 bg-ms-bg-secondary border",
         "transition-all duration-200",
         "hover:border-ms-border hover:-translate-y-0.5 hover:shadow-lg",
         "focus-within:ring-ms-accent/50 focus-within:ring-2",
+        usesWideLayout && "lg:grid lg:grid-cols-2",
       )}
     >
       {thumbnailUrl ? (
@@ -147,14 +157,21 @@ export function ArticleCard({
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-ms-bg-tertiary relative block aspect-[16/9] w-full overflow-hidden"
+          className={cn(
+            "bg-ms-bg-tertiary relative block aspect-[16/9] w-full overflow-hidden",
+            usesWideLayout && "lg:aspect-auto lg:min-h-64",
+          )}
           aria-label={`Read: ${article.title}`}
         >
           <Image
             src={thumbnailUrl}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            sizes={
+              usesWideLayout
+                ? "(max-width: 1024px) 100vw, 50vw"
+                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            }
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
@@ -180,6 +197,7 @@ export function ArticleCard({
         className={cn(
           "flex flex-1 flex-col gap-2 p-3",
           !thumbnailUrl && "min-h-28",
+          usesWideLayout && "lg:p-6",
         )}
       >
         {/* Title */}
@@ -194,6 +212,16 @@ export function ArticleCard({
             {article.title}
           </a>
         </h3>
+
+        {/* Promoted repository cards use their stored description to make the larger footprint informative. */}
+        {excerpt && (
+          <p
+            className="text-ms-text-secondary line-clamp-3 text-xs leading-relaxed"
+            data-article-summary
+          >
+            {excerpt}
+          </p>
+        )}
 
         {/* Meta row: source badge + time + score */}
         <div className="text-ms-text-muted mt-auto flex items-center gap-2 text-xs">

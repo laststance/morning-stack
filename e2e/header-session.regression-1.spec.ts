@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { isMobileViewport, openMobileMenu } from "./fixtures";
 
 const E2E_SESSION_TOKEN = "e2e-session-token";
-const E2E_BASE_URL = `http://localhost:${process.env.E2E_PORT ?? "3198"}`;
+const E2E_BASE_URL = `http://localhost:${process.env.E2E_PORT ?? "3199"}`;
 
 test("authenticated readers see signed-in Header controls without a client session request", async ({
   context,

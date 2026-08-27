@@ -140,7 +140,7 @@ Install dependencies:
 pnpm install
 ```
 
-Run the development server on port 3198:
+Run the development server on port 3199:
 
 ```bash
 pnpm dev
@@ -149,7 +149,7 @@ pnpm dev
 Before starting the server during agent work, clear the port first:
 
 ```bash
-kill-port 3198
+kill-port 3199
 ```
 
 Database tasks:

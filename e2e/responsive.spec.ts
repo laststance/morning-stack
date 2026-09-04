@@ -46,19 +46,22 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
     await expect(mobileNav.getByText("Settings")).toBeVisible();
   });
 
-  test("mobile edition tabs work in hamburger menu", async ({ page }) => {
+  test("mobile edition links work in hamburger menu", async ({ page }) => {
     await page.goto("/");
     await waitForPageReady(page);
 
     const hamburger = page.getByLabel("Open menu");
     await hamburger.click();
 
-    // Should see edition tabs in mobile nav
+    // Edition navigation stays link-based inside the mobile menu.
     const mobileNav = page.getByLabel("Mobile navigation");
-    const eveningTab = mobileNav.getByRole("tab", { name: /Evening/i });
-    await expect(eveningTab).toBeVisible();
+    const eveningLink = mobileNav.getByRole("link", {
+      name: "Evening",
+      exact: true,
+    });
+    await expect(eveningLink).toBeVisible();
 
-    await eveningTab.click();
+    await eveningLink.click();
 
     // Menu should close after tab click
     await expect(mobileNav).toBeHidden({ timeout: 3000 });
@@ -97,11 +100,11 @@ test.describe("Responsive Layout — Tablet (768px)", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    // Desktop edition tabs should be visible
-    const tablist = page
-      .getByRole("tablist", { name: "Edition selector" })
+    // Desktop edition links use a navigation landmark.
+    const editionNavigation = page
+      .getByRole("navigation", { name: "Edition selector" })
       .first();
-    await expect(tablist).toBeVisible();
+    await expect(editionNavigation).toBeVisible();
 
     // Hamburger should be hidden
     const hamburger = page.getByLabel(/open menu/i);
@@ -161,11 +164,11 @@ test.describe("Responsive Layout — Desktop (1280px)", () => {
     await page.goto("/");
     await waitForPageReady(page);
 
-    // Edition tabs visible
-    const tablist = page
-      .getByRole("tablist", { name: "Edition selector" })
+    // Edition navigation is visible.
+    const editionNavigation = page
+      .getByRole("navigation", { name: "Edition selector" })
       .first();
-    await expect(tablist).toBeVisible();
+    await expect(editionNavigation).toBeVisible();
 
     // Bookmarks and Settings icon buttons visible
     await expect(page.getByLabel("Bookmarks").first()).toBeVisible();

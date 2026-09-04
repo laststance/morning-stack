@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore, type MouseEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { LogIn } from "lucide-react";
@@ -19,7 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 const emptySubscribe = () => () => {};
 
 /**
- * Renders global app controls and server-confirmed Home edition tabs, using the shared transition when the home route supplies selection props.
+ * Renders global app controls and server-confirmed Home edition links, using the shared transition when the home route supplies selection props.
  * @param props - Optional Home request state; site routes use their standard non-home Header behavior.
  * @returns Responsive Header with edition, account, theme, bookmark, and settings controls.
  * @example
@@ -34,7 +33,6 @@ export function Header({
   requestedEditionType?: EditionType;
   isHistoricalSelection?: boolean;
 } = {}) {
-  const router = useRouter();
   const homeNavigation = useHomeNavigation();
   const { data: session } = useSession();
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
@@ -49,25 +47,51 @@ export function Header({
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const editionType = requestedEditionType ?? storedEditionType;
   const editionDate = requestedDate ?? storedEditionDate;
+  const hasConfirmedHomeSelection =
+    requestedDate !== undefined && requestedEditionType !== undefined;
+  const editionDateLabel = hasConfirmedHomeSelection
+    ? `${formatEditionDate(editionDate)} - ${
+        editionType === "morning" ? "Morning Edition" : "Evening Edition"
+      }`
+    : formatEditionDate(editionDate);
 
   const tabs: { type: EditionType; label: string; icon: string }[] = [
     { type: "morning", label: "Morning", icon: "☀️" },
     { type: "evening", label: "Evening", icon: "🌙" },
   ];
 
-  const handleEditionSelect = useCallback(
-    (selectedEditionType: EditionType) => {
-      if (homeNavigation) {
-        homeNavigation.navigate({
-          control: selectedEditionType,
-          editionType: selectedEditionType,
-        });
-        return;
-      }
+  /**
+   * Preserves native modified-link behavior while Home uses its shared transition for ordinary navigation.
+   * @param event - Link activation event from the desktop or mobile edition control.
+   * @param selectedEditionType - Edition encoded by the activated link.
+   * @returns Whether the current browsing context accepted the navigation.
+   * @example
+   * handleEditionLinkClick(event, "evening") // => true
+   */
+  const handleEditionLinkClick = useCallback(
+    (
+      event: MouseEvent<HTMLAnchorElement>,
+      selectedEditionType: EditionType,
+    ): boolean => {
+      const opensSeparateBrowsingContext =
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey;
+      if (opensSeparateBrowsingContext) return false;
+      if (!homeNavigation) return true;
 
-      router.push(buildHomeHref(null, selectedEditionType));
+      event.preventDefault();
+      if (homeNavigation.isPending) return false;
+
+      homeNavigation.navigate({
+        control: selectedEditionType,
+        editionType: selectedEditionType,
+      });
+      return true;
     },
-    [homeNavigation, router],
+    [homeNavigation],
   );
 
   return (
@@ -83,44 +107,49 @@ export function Header({
 
         {/* Center: Edition tabs + date (hidden on mobile) */}
         <div className="hidden flex-col items-center gap-0.5 sm:flex">
-          <div
-            className="flex gap-1"
-            role="tablist"
-            aria-label="Edition selector"
-          >
+          <nav className="flex gap-1" aria-label="Edition selector">
             {tabs.map((tab) => (
-              <button
+              <Link
                 key={tab.type}
-                role="tab"
-                aria-selected={editionType === tab.type}
-                disabled={homeNavigation?.isPending}
-                className={`relative cursor-pointer px-3 pt-1 pb-1.5 text-xs font-medium uppercase transition-colors ${
-                  editionType === tab.type
+                href={buildHomeHref(
+                  isHistoricalSelection ? (requestedDate ?? null) : null,
+                  tab.type,
+                )}
+                aria-current={
+                  hasConfirmedHomeSelection && editionType === tab.type
+                    ? "page"
+                    : undefined
+                }
+                aria-disabled={homeNavigation?.isPending || undefined}
+                className={`relative px-3 pt-1 pb-1.5 text-xs font-medium uppercase transition-colors aria-disabled:cursor-wait aria-disabled:opacity-60 ${
+                  hasConfirmedHomeSelection && editionType === tab.type
                     ? "text-ms-accent"
-                    : "text-ms-text-muted hover:text-ms-text-secondary"
+                    : "text-ms-text-secondary hover:text-ms-text-primary"
                 }`}
-                onClick={() => handleEditionSelect(tab.type)}
+                onClick={(event) => handleEditionLinkClick(event, tab.type)}
               >
-                {homeNavigation?.isPending &&
-                homeNavigation.activeControl === tab.type ? (
-                  <Spinner aria-label={`Loading ${tab.label} edition`} />
-                ) : (
-                  <span aria-hidden="true">{tab.icon}</span>
-                )}{" "}
+                <span className="inline-flex size-4 items-center justify-center">
+                  {homeNavigation?.isPending &&
+                  homeNavigation.activeControl === tab.type ? (
+                    <Spinner
+                      className="size-3.5"
+                      aria-label={`Loading ${tab.label} edition`}
+                    />
+                  ) : (
+                    <span aria-hidden="true">{tab.icon}</span>
+                  )}
+                </span>{" "}
                 {tab.label}
-                {/* Active tab underline */}
-                {editionType === tab.type && (
+                {/* The underline mirrors aria-current only on Home routes. */}
+                {hasConfirmedHomeSelection && editionType === tab.type && (
                   <span className="bg-ms-accent absolute inset-x-3 bottom-0 h-0.5 rounded-full" />
                 )}
-              </button>
+              </Link>
             ))}
-          </div>
+          </nav>
           {!isHistoricalSelection && (
-            <span className="text-ms-text-muted text-xs leading-none">
-              {formatEditionDate(editionDate)} -{" "}
-              {editionType === "morning"
-                ? "Morning Edition"
-                : "Evening Edition"}
+            <span className="text-ms-text-secondary text-xs leading-none">
+              {editionDateLabel}
             </span>
           )}
         </div>
@@ -225,46 +254,58 @@ export function Header({
           className="border-ms-glass-border bg-ms-bg-primary border-t px-4 pb-4 sm:hidden"
           aria-label="Mobile navigation"
         >
-          {/* Edition tabs */}
+          {/* Edition links */}
           <div
             className="border-ms-border flex gap-1 border-b py-3"
-            role="tablist"
+            role="group"
             aria-label="Edition selector"
           >
             {tabs.map((tab) => (
-              <button
+              <Link
                 key={tab.type}
-                role="tab"
-                aria-selected={editionType === tab.type}
-                disabled={homeNavigation?.isPending}
-                className={`relative min-h-11 cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  editionType === tab.type
+                href={buildHomeHref(
+                  isHistoricalSelection ? (requestedDate ?? null) : null,
+                  tab.type,
+                )}
+                aria-current={
+                  hasConfirmedHomeSelection && editionType === tab.type
+                    ? "page"
+                    : undefined
+                }
+                aria-disabled={homeNavigation?.isPending || undefined}
+                className={`relative min-h-11 rounded-md px-3 py-2 text-sm font-medium transition-colors aria-disabled:cursor-wait aria-disabled:opacity-60 ${
+                  hasConfirmedHomeSelection && editionType === tab.type
                     ? "bg-ms-accent/10 text-ms-accent"
-                    : "text-ms-text-muted hover:text-ms-text-secondary"
+                    : "text-ms-text-secondary hover:text-ms-text-primary"
                 }`}
-                onClick={() => {
-                  handleEditionSelect(tab.type);
-                  dispatch(setSidebarOpen(false));
+                onClick={(event) => {
+                  const didAcceptNavigation = handleEditionLinkClick(
+                    event,
+                    tab.type,
+                  );
+                  if (didAcceptNavigation) dispatch(setSidebarOpen(false));
                 }}
               >
-                {homeNavigation?.isPending &&
-                homeNavigation.activeControl === tab.type ? (
-                  <Spinner aria-label={`Loading ${tab.label} edition`} />
-                ) : (
-                  <span aria-hidden="true">{tab.icon}</span>
-                )}{" "}
+                <span className="inline-flex size-4 items-center justify-center">
+                  {homeNavigation?.isPending &&
+                  homeNavigation.activeControl === tab.type ? (
+                    <Spinner
+                      className="size-3.5"
+                      aria-label={`Loading ${tab.label} edition`}
+                    />
+                  ) : (
+                    <span aria-hidden="true">{tab.icon}</span>
+                  )}
+                </span>{" "}
                 {tab.label}
-              </button>
+              </Link>
             ))}
           </div>
 
           {/* Edition date */}
           {!isHistoricalSelection && (
-            <p className="text-ms-text-muted py-2 text-xs">
-              {formatEditionDate(editionDate)} -{" "}
-              {editionType === "morning"
-                ? "Morning Edition"
-                : "Evening Edition"}
+            <p className="text-ms-text-secondary py-2 text-xs">
+              {editionDateLabel}
             </p>
           )}
 

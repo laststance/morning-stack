@@ -44,13 +44,15 @@ test.describe("Historical edition navigation", () => {
     await expect(page.getByText("Current shared story").first()).toBeVisible();
   });
 
-  test("edition tabs retain the selected historical date", async ({ page }) => {
+  test("edition links retain the selected historical date", async ({
+    page,
+  }) => {
     // Arrange
     await page.goto(`/?date=${YESTERDAY}&edition=morning`);
     await waitForPageReady(page);
 
     // Act
-    await clickEditionTab(page, /Evening/i);
+    await clickEditionLink(page, "Evening");
 
     // Assert
     await expect(page).toHaveURL(`/?date=${YESTERDAY}&edition=evening`);
@@ -267,17 +269,22 @@ test.describe("Historical edition navigation", () => {
 });
 
 /**
- * Selects a visible header or mobile-menu edition tab so the same observable spec runs across browser projects.
+ * Selects a visible header or mobile-menu edition link so the same observable spec runs across browser projects.
  * @param page - Playwright page at the Home route.
- * @param label - Accessible Morning or Evening tab label.
- * @returns Resolves after the visible tab receives the click.
+ * @param label - Exact accessible Morning or Evening link label.
+ * @returns Resolves after the visible link receives the click.
  * @example
- * await clickEditionTab(page, /Evening/i)
+ * await clickEditionLink(page, "Evening")
  */
-async function clickEditionTab(page: Page, label: RegExp): Promise<void> {
-  const desktopTab = page.locator("header").getByRole("tab", { name: label });
-  if (await desktopTab.isVisible()) {
-    await desktopTab.click();
+async function clickEditionLink(
+  page: Page,
+  label: "Morning" | "Evening",
+): Promise<void> {
+  const desktopLink = page
+    .locator("header")
+    .getByRole("link", { name: label, exact: true });
+  if (await desktopLink.isVisible()) {
+    await desktopLink.click();
     return;
   }
 
@@ -285,6 +292,6 @@ async function clickEditionTab(page: Page, label: RegExp): Promise<void> {
   await page
     .locator('[aria-label="Mobile navigation"]:visible')
     .first()
-    .getByRole("tab", { name: label })
+    .getByRole("link", { name: label, exact: true })
     .click();
 }

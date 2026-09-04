@@ -2,22 +2,28 @@ import { test, expect, type Page } from "@playwright/test";
 import { waitForPageReady, isMobileViewport, openMobileMenu } from "./fixtures";
 
 /**
- * Click an edition tab in the visible desktop header or mobile menu.
+ * Click an edition link in the visible desktop header or mobile menu.
  * @param page - The Playwright page under test.
- * @param label - The accessible tab label to select.
- * @returns A resolved promise after the tab click action completes.
+ * @param label - The exact accessible link label to select.
+ * @returns A resolved promise after the link click action completes.
  * @example
- * await clickEditionTab(page, /Evening/i);
+ * await clickEditionLink(page, "Evening");
  */
-async function clickEditionTab(page: Page, label: RegExp): Promise<void> {
+async function clickEditionLink(
+  page: Page,
+  label: "Morning" | "Evening",
+): Promise<void> {
   if (isMobileViewport(page)) {
     await openMobileMenu(page);
     const mobileNav = page.getByLabel("Mobile navigation");
-    await mobileNav.getByRole("tab", { name: label }).click();
+    await mobileNav.getByRole("link", { name: label, exact: true }).click();
     return;
   }
 
-  await page.locator("header").getByRole("tab", { name: label }).click();
+  await page
+    .locator("header")
+    .getByRole("link", { name: label, exact: true })
+    .click();
 }
 
 test.describe("Home Page", () => {
@@ -26,7 +32,9 @@ test.describe("Home Page", () => {
     await waitForPageReady(page);
   });
 
-  test("loads with header, logo, and edition tabs", async ({ page }) => {
+  test("loads with header, logo, and edition navigation links", async ({
+    page,
+  }) => {
     // Header is visible
     const header = page.locator("header");
     await expect(header).toBeVisible();
@@ -35,24 +43,26 @@ test.describe("Home Page", () => {
     await expect(page.getByText("MorningStack").first()).toBeVisible();
 
     if (isMobileViewport(page)) {
-      // On mobile, tabs are inside hamburger menu
+      // On mobile, edition links are inside the hamburger menu.
       await openMobileMenu(page);
       const mobileNav = page.getByLabel("Mobile navigation");
-      const tablist = mobileNav.getByRole("tablist", {
-        name: "Edition selector",
-      });
-      await expect(tablist).toBeVisible();
+      const editionLinks = mobileNav.getByLabel("Edition selector");
+      await expect(editionLinks).toBeVisible();
     } else {
-      // On desktop, tabs are in the header
-      const tablist = page
-        .getByRole("tablist", { name: "Edition selector" })
+      // On desktop, edition links have their own navigation landmark.
+      const editionNavigation = page
+        .getByRole("navigation", { name: "Edition selector" })
         .first();
-      await expect(tablist).toBeVisible();
+      await expect(editionNavigation).toBeVisible();
 
-      const morningTab = page.getByRole("tab", { name: /Morning/i }).first();
-      const eveningTab = page.getByRole("tab", { name: /Evening/i }).first();
-      await expect(morningTab).toBeVisible();
-      await expect(eveningTab).toBeVisible();
+      const morningLink = page
+        .getByRole("link", { name: "Morning", exact: true })
+        .first();
+      const eveningLink = page
+        .getByRole("link", { name: "Evening", exact: true })
+        .first();
+      await expect(morningLink).toBeVisible();
+      await expect(eveningLink).toBeVisible();
     }
   });
 
@@ -90,99 +100,141 @@ test.describe("Home Page", () => {
   });
 });
 
-test.describe("Edition Tab Switching", () => {
+test.describe("Edition link navigation", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await waitForPageReady(page);
   });
 
-  test("morning tab is active by default or evening based on time", async ({
+  test("one edition link represents the time-based or saved default", async ({
     page,
   }) => {
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
       const mobileNav = page.getByLabel("Mobile navigation");
-      const selectedTab = mobileNav.locator(
-        '[role="tab"][aria-selected="true"]',
-      );
-      await expect(selectedTab).toBeVisible();
-      const tabText = await selectedTab.textContent();
-      expect(tabText).toMatch(/Morning|Evening/);
+      const currentEditionLink = mobileNav.locator('a[aria-current="page"]');
+      await expect(currentEditionLink).toBeVisible();
+      const linkText = await currentEditionLink.textContent();
+      expect(linkText).toMatch(/Morning|Evening/);
     } else {
-      const selectedTab = page
-        .locator('[role="tab"][aria-selected="true"]')
+      const currentEditionLink = page
+        .locator('header a[aria-current="page"]')
         .first();
-      await expect(selectedTab).toBeVisible();
-      const tabText = await selectedTab.textContent();
-      expect(tabText).toMatch(/Morning|Evening/);
+      await expect(currentEditionLink).toBeVisible();
+      const linkText = await currentEditionLink.textContent();
+      expect(linkText).toMatch(/Morning|Evening/);
     }
   });
 
-  test("clicking evening tab changes active state", async ({ page }) => {
+  test("clicking Evening updates the current navigation link", async ({
+    page,
+  }) => {
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
     }
 
-    const eveningTab = page.getByRole("tab", { name: /Evening/i }).first();
-    await eveningTab.click();
+    const eveningLink = page
+      .getByRole("link", { name: "Evening", exact: true })
+      .first();
+    await eveningLink.click();
 
     if (isMobileViewport(page)) {
-      // Menu closes on tab click; reopen to verify
+      // Menu closes on navigation; reopen to verify the committed route.
       await openMobileMenu(page);
     }
 
-    const eveningTabAfter = page.getByRole("tab", { name: /Evening/i }).first();
-    await expect(eveningTabAfter).toHaveAttribute("aria-selected", "true");
+    const eveningLinkAfter = page
+      .getByRole("link", { name: "Evening", exact: true })
+      .first();
+    await expect(eveningLinkAfter).toHaveAttribute("aria-current", "page");
 
-    const morningTab = page.getByRole("tab", { name: /Morning/i }).first();
-    await expect(morningTab).toHaveAttribute("aria-selected", "false");
+    const morningLink = page
+      .getByRole("link", { name: "Morning", exact: true })
+      .first();
+    await expect(morningLink).not.toHaveAttribute("aria-current", "page");
   });
 
-  test("clicking morning tab switches back", async ({ page }) => {
+  test("clicking Morning switches the current navigation link back", async ({
+    page,
+  }) => {
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
     }
 
     // Switch to evening first
-    const eveningTab = page.getByRole("tab", { name: /Evening/i }).first();
-    await eveningTab.click();
+    const eveningLink = page
+      .getByRole("link", { name: "Evening", exact: true })
+      .first();
+    await eveningLink.click();
 
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
     }
 
-    // Switch back to morning
-    const morningTab = page.getByRole("tab", { name: /Morning/i }).first();
-    await morningTab.click();
+    // Switch back to Morning.
+    const morningLink = page
+      .getByRole("link", { name: "Morning", exact: true })
+      .first();
+    await morningLink.click();
 
     if (isMobileViewport(page)) {
       await openMobileMenu(page);
     }
 
-    const morningTabAfter = page.getByRole("tab", { name: /Morning/i }).first();
-    await expect(morningTabAfter).toHaveAttribute("aria-selected", "true");
+    const morningLinkAfter = page
+      .getByRole("link", { name: "Morning", exact: true })
+      .first();
+    await expect(morningLinkAfter).toHaveAttribute("aria-current", "page");
 
-    const eveningTabAfter = page.getByRole("tab", { name: /Evening/i }).first();
-    await expect(eveningTabAfter).toHaveAttribute("aria-selected", "false");
+    const eveningLinkAfter = page
+      .getByRole("link", { name: "Evening", exact: true })
+      .first();
+    await expect(eveningLinkAfter).not.toHaveAttribute("aria-current", "page");
   });
 
-  test("clicking edition tabs navigates to edition-specific URL so server data can refresh", async ({
+  test("clicking edition links navigates to edition-specific URLs so server data refreshes", async ({
     page,
   }) => {
     // Arrange
     await expect(page.locator("header")).toBeVisible();
 
     // Act
-    await clickEditionTab(page, /Evening/i);
+    await clickEditionLink(page, "Evening");
 
     // Assert
     await expect(page).toHaveURL(/[?&]edition=evening(?:&|$)/);
 
     // Act
-    await clickEditionTab(page, /Morning/i);
+    await clickEditionLink(page, "Morning");
 
     // Assert
     await expect(page).toHaveURL(/[?&]edition=morning(?:&|$)/);
+  });
+
+  test("modifier-clicking an edition link opens its URL separately and keeps the current page", async ({
+    context,
+    page,
+  }) => {
+    // Arrange
+    if (isMobileViewport(page)) {
+      await openMobileMenu(page);
+    }
+    const originalUrl = page.url();
+    const eveningLink = page
+      .getByRole("link", { name: "Evening", exact: true })
+      .first();
+
+    // Act
+    const [openedPage] = await Promise.all([
+      context.waitForEvent("page"),
+      eveningLink.click({ modifiers: ["ControlOrMeta"] }),
+    ]);
+    await openedPage.waitForLoadState("domcontentloaded");
+
+    // Assert
+    expect(page.url()).toBe(originalUrl);
+    await expect(openedPage).toHaveURL(/[?&]edition=evening(?:&|$)/);
+    await openedPage.close();
   });
 
   test("edition date updates in header subtitle", async ({ page }) => {
@@ -202,13 +254,13 @@ test.describe("Edition Tab Switching", () => {
     let scope = await getNavScope();
     await expect(scope.getByText(/Edition/i).first()).toBeVisible();
 
-    // Click evening tab
+    // Click Evening.
     await scope
-      .getByRole("tab", { name: /Evening/i })
+      .getByRole("link", { name: "Evening", exact: true })
       .first()
       .click();
 
-    // On mobile, tab click closes the menu — need to wait then reopen
+    // On mobile, navigation closes the menu before the committed route renders.
     if (isMobileViewport(page)) {
       await page.waitForTimeout(300);
     }
@@ -216,9 +268,9 @@ test.describe("Edition Tab Switching", () => {
     scope = await getNavScope();
     await expect(scope.getByText("Evening Edition").first()).toBeVisible();
 
-    // Click morning tab
+    // Click Morning.
     await scope
-      .getByRole("tab", { name: /Morning/i })
+      .getByRole("link", { name: "Morning", exact: true })
       .first()
       .click();
 

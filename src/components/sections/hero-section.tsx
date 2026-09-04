@@ -276,7 +276,7 @@ function HeroMainCard({
           </div>
 
           {/* Title */}
-          <h1 className="text-ms-text-primary text-2xl leading-[1.1] font-semibold tracking-[-0.025em] text-balance sm:text-3xl lg:text-4xl">
+          <h1 className="font-editorial text-ms-text-primary text-2xl leading-[1.1] font-semibold text-balance sm:text-3xl lg:text-4xl">
             <a
               href={article.url}
               target="_blank"

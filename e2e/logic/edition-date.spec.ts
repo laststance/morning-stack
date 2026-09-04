@@ -4,6 +4,7 @@ import { addDaysToCivilDate } from "@/lib/edition-date/add-days-to-civil-date";
 import { parseCivilDate } from "@/lib/edition-date/parse-civil-date";
 import { getArchiveBoundaryRedirectHref } from "@/lib/edition-navigation/get-archive-boundary-redirect-href";
 import { resolveHomeSearchParams } from "@/lib/edition-navigation/resolve-home-search-params";
+import { parseSavedEditionType } from "@/lib/edition-preference/parse-saved-edition-type";
 
 test("strict civil dates reject malformed and impossible calendar values", () => {
   // Arrange
@@ -120,6 +121,49 @@ test("home URLs canonicalize current, historical, malformed, future, and duplica
 
   // Assert
   expect(results).toEqual(cases.map(({ expected }) => expected));
+});
+
+test("explicit edition URLs override the saved default while an absent edition uses it", () => {
+  // Arrange
+  const savedDefaultEdition = parseSavedEditionType("evening");
+  if (!savedDefaultEdition) throw new Error("Expected a valid saved edition");
+
+  // Act
+  const implicitSelection = resolveHomeSearchParams(
+    {},
+    "2030-01-15",
+    savedDefaultEdition,
+  );
+  const explicitSelection = resolveHomeSearchParams(
+    { edition: "morning" },
+    "2030-01-15",
+    savedDefaultEdition,
+  );
+  const historicalDateOnlySelection = resolveHomeSearchParams(
+    { date: "2030-01-14" },
+    "2030-01-15",
+    savedDefaultEdition,
+  );
+
+  // Assert
+  expect(implicitSelection.requestedEditionType).toBe("evening");
+  expect(explicitSelection.requestedEditionType).toBe("morning");
+  expect(historicalDateOnlySelection).toMatchObject({
+    requestedDate: "2030-01-14",
+    requestedEditionType: "evening",
+    redirectHref: "/?date=2030-01-14&edition=evening",
+  });
+});
+
+test("invalid browser preferences fall back instead of becoming edition state", () => {
+  // Arrange
+  const cookieValues = ["weekly", "", undefined];
+
+  // Act
+  const parsedValues = cookieValues.map(parseSavedEditionType);
+
+  // Assert
+  expect(parsedValues).toEqual([null, null, null]);
 });
 
 test("archive boundary redirects to the shared earliest date without changing edition type", () => {

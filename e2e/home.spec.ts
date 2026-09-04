@@ -259,11 +259,7 @@ test.describe("Edition link navigation", () => {
       .getByRole("link", { name: "Evening", exact: true })
       .first()
       .click();
-
-    // On mobile, navigation closes the menu before the committed route renders.
-    if (isMobileViewport(page)) {
-      await page.waitForTimeout(300);
-    }
+    await expect(page).toHaveURL(/[?&]edition=evening(?:&|$)/);
 
     scope = await getNavScope();
     await expect(scope.getByText("Evening Edition").first()).toBeVisible();
@@ -273,10 +269,7 @@ test.describe("Edition link navigation", () => {
       .getByRole("link", { name: "Morning", exact: true })
       .first()
       .click();
-
-    if (isMobileViewport(page)) {
-      await page.waitForTimeout(300);
-    }
+    await expect(page).toHaveURL(/[?&]edition=morning(?:&|$)/);
 
     scope = await getNavScope();
     await expect(scope.getByText("Morning Edition").first()).toBeVisible();

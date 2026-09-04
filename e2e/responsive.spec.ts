@@ -47,6 +47,7 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
   });
 
   test("mobile edition links work in hamburger menu", async ({ page }) => {
+    // Arrange
     await page.goto("/");
     await waitForPageReady(page);
 
@@ -61,9 +62,11 @@ test.describe("Responsive Layout — Mobile (<640px)", () => {
     });
     await expect(eveningLink).toBeVisible();
 
+    // Act
     await eveningLink.click();
 
-    // Menu should close after tab click
+    // Assert
+    await expect(page).toHaveURL(/[?&]edition=evening(?:&|$)/);
     await expect(mobileNav).toBeHidden({ timeout: 3000 });
   });
 

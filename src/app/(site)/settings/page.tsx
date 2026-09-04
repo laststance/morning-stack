@@ -29,7 +29,7 @@ export const metadata: Metadata = {
  */
 export default async function SettingsPage() {
   return (
-    <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 lg:px-8">
       <h1 className="text-ms-text-primary text-2xl font-bold tracking-tight">
         Settings
       </h1>

@@ -44,7 +44,7 @@ test.describe("Historical edition navigation", () => {
     await expect(page.getByText("Current shared story").first()).toBeVisible();
   });
 
-  test("edition links retain the selected historical date", async ({
+  test("switching Evening and Morning retains the selected historical date", async ({
     page,
   }) => {
     // Arrange
@@ -64,6 +64,15 @@ test.describe("Historical edition navigation", () => {
       }),
     ).toBeVisible();
     await expect(page.getByLabel("Stock ticker")).toHaveCount(0);
+
+    // Act
+    await clickEditionLink(page, "Morning");
+
+    // Assert
+    await expect(page).toHaveURL("/?date=2030-01-14&edition=morning");
+    await expect(
+      page.getByText("Historical shared story").first(),
+    ).toBeVisible();
   });
 
   test("date picker disables future dates and restores trigger focus after Escape", async ({

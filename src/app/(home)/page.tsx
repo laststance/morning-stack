@@ -17,6 +17,7 @@ import { auth } from "@/lib/auth";
 import { getDefaultEditionType } from "@/lib/edition-date/get-default-edition-type";
 import { getTodayJst } from "@/lib/edition-date/get-today-jst";
 import { formatEditionDate } from "@/lib/edition-date/format-edition-date";
+import { getSavedEditionType } from "@/lib/edition-preference/get-saved-edition-type";
 import { getArchiveBoundaryRedirectHref } from "@/lib/edition-navigation/get-archive-boundary-redirect-href";
 import { resolveHomeSearchParams } from "@/lib/edition-navigation/resolve-home-search-params";
 import type { HomeSearchParams } from "@/lib/edition-navigation/resolved-home-selection";
@@ -65,10 +66,11 @@ export default async function HomePage({
   searchParams: Promise<HomeSearchParams>;
 }) {
   const today = getTodayJst();
+  const savedEditionType = await getSavedEditionType();
   const selection = resolveHomeSearchParams(
     await searchParams,
     today,
-    getDefaultEditionType(),
+    savedEditionType ?? getDefaultEditionType(),
   );
 
   // Redirect-based canonicalization must stay outside all query error boundaries.

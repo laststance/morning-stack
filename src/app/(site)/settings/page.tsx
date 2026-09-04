@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { getHiddenItems } from "@/app/actions/hidden";
 import { SettingsContent } from "@/components/settings-content";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDefaultEditionType } from "@/lib/edition-date/get-default-edition-type";
+import { getSavedEditionType } from "@/lib/edition-preference/get-saved-edition-type";
 
 // ─── Route Segment Config ───────────────────────────────────────────
 
@@ -20,18 +22,18 @@ export const metadata: Metadata = {
 // ─── Page Component ─────────────────────────────────────────────────
 
 /**
- * Settings page — Account info, Hidden Items management, Display Preferences.
- *
- * Protected by the auth boundary in `src/proxy.ts` — unauthenticated
- * users are redirected to /login before this page renders.
+ * Renders the protected Settings shell whenever authenticated users manage account, hidden-item, and display preferences.
+ * @returns Settings page with deferred account data and display preference controls.
+ * @example
+ * <SettingsPage />
  */
 export default async function SettingsPage() {
   return (
-    <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold tracking-tight text-ms-text-primary">
+    <main className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 lg:px-8">
+      <h1 className="text-ms-text-primary text-2xl font-bold tracking-tight">
         Settings
       </h1>
-      <p className="mt-1 text-sm text-ms-text-secondary">
+      <p className="text-ms-text-secondary mt-1 text-sm">
         Manage your account and preferences.
       </p>
 
@@ -45,11 +47,17 @@ export default async function SettingsPage() {
 }
 // ─── Async data component ───────────────────────────────────────────
 
-/** Fetches session + hidden items and passes to client component. */
+/**
+ * Fetches Settings data whenever the Suspense boundary resolves so the client tabs receive server-confirmed state.
+ * @returns SettingsContent seeded with session identity, hidden items, and default edition preference.
+ * @example
+ * <SettingsData />
+ */
 async function SettingsData() {
-  const [session, hiddenItems] = await Promise.all([
+  const [session, hiddenItems, savedEditionType] = await Promise.all([
     auth(),
     getHiddenItems(),
+    getSavedEditionType(),
   ]);
 
   return (
@@ -60,13 +68,19 @@ async function SettingsData() {
         image: session?.user?.image ?? null,
       }}
       hiddenItems={hiddenItems}
+      defaultEditionType={savedEditionType ?? getDefaultEditionType()}
     />
   );
 }
 
 // ─── Skeleton ───────────────────────────────────────────────────────
 
-/** Skeleton matching the settings layout during Suspense. */
+/**
+ * Reserves the Settings data region only while the protected server data boundary is pending.
+ * @returns Lightweight Settings placeholder cards.
+ * @example
+ * <SettingsSkeleton />
+ */
 function SettingsSkeleton() {
   return (
     <div className="space-y-6">

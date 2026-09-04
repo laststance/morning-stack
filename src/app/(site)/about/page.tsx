@@ -42,7 +42,7 @@ const KEY_FEATURES = [
  */
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 lg:px-8">
       {/* ── Hero / Vision ─────────────────────────────────── */}
       <section className="mx-auto max-w-2xl text-center">
         <h1 className="text-3xl font-bold tracking-tight text-ms-text-primary sm:text-4xl">

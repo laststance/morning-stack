@@ -147,8 +147,8 @@ function PRCard({
             key={label.name}
             className="text-ms-text-secondary rounded-sm px-1.5 py-0.5 text-[10px] font-medium"
             style={{
+              // Keep text theme-aware; GitHub label colors only tint the background.
               backgroundColor: `#${label.color}30`,
-              color: `#${label.color}`,
             }}
           >
             {label.name}

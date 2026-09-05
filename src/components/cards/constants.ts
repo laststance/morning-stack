@@ -14,14 +14,14 @@ export const SOURCE_COLORS: Record<ArticleSource, string> = {
   world_news: "bg-emerald-500",
 };
 
-/** Source-specific foreground colors keep 12px badge labels above WCAG AA contrast. */
+/** Source-specific foreground choices stay consistent across themes and article presentations. */
 export const SOURCE_BADGE_TEXT_COLORS: Record<ArticleSource, string> = {
-  hackernews: "text-black",
+  hackernews: "text-white",
   github: "text-black",
   github_prs: "text-black",
   reddit: "text-black",
   producthunt: "text-black",
-  tech_rss: "text-black",
+  tech_rss: "text-white",
   hatena: "text-black",
   bluesky: "text-black",
   youtube: "text-white",

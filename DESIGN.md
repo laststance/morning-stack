@@ -33,6 +33,9 @@ Use the semantic MorningStack tokens from `src/app/globals.css`; do not introduc
 
 Dark and light themes must preserve the same role hierarchy. Orange is an accent, not a general background color.
 
+- Hacker News and Tech News source badges use white text on their existing brand fills in both themes.
+- Pull Request labels use theme-aware secondary text; GitHub label colors tint the background only.
+
 ### Typography
 
 - Inter is the default UI and dense-reading face.
